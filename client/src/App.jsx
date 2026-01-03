@@ -6,7 +6,6 @@ import CikisciPanel from "./components/CikisciPanel"
 
 function App() {
   const [role, setRole] = useState(null) 
-  
   const handleLogout = () => setRole(null)
 
   if (!role) {
@@ -16,24 +15,24 @@ function App() {
   return (
     <div className="min-h-screen bg-gradient-to-br from-slate-50 to-slate-100">
       {/* Navbar */}
-      <nav className="bg-white border-b border-slate-200 shadow-sm sticky top-0 z-50 backdrop-blur-lg bg-white/95">
+      <nav className="bg-gradient-to-r from-green-600 to-green-700 border-b border-green-800 shadow-sm sticky top-0 z-50 backdrop-blur-lg">
         <div className="max-w-7xl mx-auto px-6 py-4">
           <div className="flex justify-between items-center">
             {/* Sol Taraf - Logo ve Başlık */}
             <div className="flex items-center gap-3">
               <span className="text-4xl">🫒</span>
               <div>
-                <h1 className="text-xl font-black text-transparent bg-clip-text bg-gradient-to-r from-red-500 to-red-600">
+                <h1 className="text-xl font-black text-white">
                   KAYA KARDEŞLER
                 </h1>
-                <p className="text-xs font-semibold text-slate-500">Zeytinyağı Fabrikası</p>
+                <p className="text-xs font-semibold text-green-100">Zeytinyağı Fabrikası</p>
               </div>
             </div>
 
             {/* Sağ Taraf - Çıkış Butonu */}
             <button 
               onClick={handleLogout} 
-              className="group flex items-center gap-2 px-5 py-2.5 bg-slate-800 hover:bg-slate-900 text-white font-semibold rounded-xl transition-all shadow-md hover:shadow-lg hover:scale-105 active:scale-95"
+              className="group flex items-center gap-2 px-5 py-2.5 bg-white hover:bg-red-500 text-green-700 hover:text-white font-semibold rounded-xl transition-all shadow-md hover:shadow-lg hover:scale-105 active:scale-95"
             >
               <svg 
                 className="w-4 h-4 group-hover:rotate-12 transition-transform" 
@@ -53,8 +52,9 @@ function App() {
           </div>
         </div>
       </nav>
-      
-      <div>
+
+      {/* İçerik Alanı */}
+      <div className="pt-6">
         {role === "girisci" && <GirisciPanel />}
         {role === "yagci" && <YagciPanel />}
         {role === "cikisci" && <CikisciPanel />}
