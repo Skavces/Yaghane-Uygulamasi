@@ -15,6 +15,8 @@ export default function CikisciPanel() {
   const [bekleyenMusteriAra, setBekleyenMusteriAra] = useState("")
   const [gecmisTelefonAra, setGecmisTelefonAra] = useState("")
   const [satisModalAcik, setSatisModalAcik] = useState(false)
+  const [iadeModalAcik, setIadeModalAcik] = useState(false)
+  const [iadeSecim, setIadeSecim] = useState([])
   const [satisForm, setSatisForm] = useState({
     ad_soyad: "",
     telefon: "",
@@ -39,7 +41,39 @@ export default function CikisciPanel() {
     }
   }
 
-  // Satış fonksiyonları
+  const normalizeTelefon = (t) => {
+    let d = String(t || "").replace(/\D/g, "")
+
+    if (d.startsWith("90") && d.length === 12) d = "0" + d.slice(2)
+    if (d.length === 10) d = "0" + d
+    if (d.length > 11) d = d.slice(0, 11)
+
+    return d
+  }
+
+  const parseBidonList = (str) => {
+    const s = String(str || "").trim()
+    if (!s) return []
+    const parts = s
+      .replace(/[,\s]+/g, "-")
+      .split("-")
+      .map((x) => x.trim())
+      .filter(Boolean)
+    // unique
+    return Array.from(new Set(parts))
+  }
+
+  const formatBidonList = (arr) => {
+    const a = (arr || []).map((x) => String(x).trim()).filter(Boolean)
+    return Array.from(new Set(a)).join("-")
+  }
+
+  const bidonKalanHesapla = (verilenStr, iadeStr) => {
+    const verilen = parseBidonList(verilenStr)
+    const iade = new Set(parseBidonList(iadeStr))
+    return verilen.filter((x) => !iade.has(x))
+  }
+
   const handleSatisInput = (e) => {
     setSatisForm({ ...satisForm, [e.target.name]: e.target.value })
   }
@@ -212,7 +246,13 @@ export default function CikisciPanel() {
             ? "Para"
             : "Satış",
         "Yağ Fiyatı (₺)": x.yag_fiyati ?? "",
-        "Bidon No": x.bidon_no ?? "",
+        "Verilen Bidonlar": x.bidon_no ?? "",
+        "Geri Alınan Bidonlar": x.iade_bidonlar ?? x.geri_alinan_bidonlar ?? "",
+        "Kalan (Müşteride)":
+          bidonKalanHesapla(
+            x.bidon_no ?? "",
+            x.iade_bidonlar ?? x.geri_alinan_bidonlar ?? ""
+          ).join("-") || "",
         Notlar: x.notlar ?? "",
       }))
 
@@ -290,19 +330,204 @@ export default function CikisciPanel() {
     return verileriHazirla(seciliIslem)
   }, [seciliIslem])
 
+  const bidonOzetAyniTelefon = useMemo(() => {
+    if (!seciliIslem?.telefon) return null
+
+    const tel = normalizeTelefon(seciliIslem.telefon)
+    if (!tel) return null
+
+    const ilgiliKayitlar = tumListe.filter((x) => {
+      if (x.odeme_tipi === "SATIS") return false
+      return normalizeTelefon(x.telefon) === tel
+    })
+
+    let genelToplam = 0
+
+    for (const kayit of ilgiliKayitlar) {
+      const v = verileriHazirla(kayit)
+      const adet = Number(v?.verilecekBidon || 0)
+      genelToplam += adet
+    }
+
+    return { tel, genelToplam }
+  }, [tumListe, seciliIslem])
+
+  const openIadeModal = () => {
+    if (!seciliIslem) return
+    const verilen = parseBidonList(seciliIslem.bidon_no)
+    const iade = parseBidonList(seciliIslem.iade_bidonlar ?? seciliIslem.geri_alinan_bidonlar ?? "")
+    const iadeFiltered = iade.filter((x) => new Set(verilen).has(x))
+    setIadeSecim(iadeFiltered)
+    setIadeModalAcik(true)
+  }
+
+  const toggleIade = (no) => {
+    const s = String(no)
+    setIadeSecim((prev) => {
+      const set = new Set(prev.map(String))
+      if (set.has(s)) set.delete(s)
+      else set.add(s)
+      return Array.from(set)
+    })
+  }
+
+  const selectAllIade = () => {
+    const verilen = parseBidonList(seciliIslem?.bidon_no)
+    setIadeSecim(verilen)
+  }
+
+  const clearIade = () => setIadeSecim([])
+
+  const handleIadeKaydet = async () => {
+    if (!seciliIslem) return
+    try {
+      const verilen = parseBidonList(seciliIslem.bidon_no)
+      const setVerilen = new Set(verilen)
+      const temiz = (iadeSecim || []).map(String).filter((x) => setVerilen.has(x))
+      const payload = { iade_bidonlar: formatBidonList(temiz) }
+
+      await axios.put(`/api/bidon-iade/${seciliIslem.id}`, payload)
+
+      setMesaj("Bidon iadesi kaydedildi.")
+      setIadeModalAcik(false)
+      setSeciliIslem((prev) => (prev ? { ...prev, iade_bidonlar: payload.iade_bidonlar } : prev))
+      fetchListe()
+      setTimeout(() => setMesaj(""), 3000)
+    } catch (e) {
+      console.error(e)
+      alert("Bidon iadesi kaydedilirken hata oluştu.")
+    }
+  }
+
+  const seciliVerilenBidonlar = useMemo(() => {
+    if (!seciliIslem) return []
+    return parseBidonList(seciliIslem.bidon_no)
+  }, [seciliIslem])
+
+  const seciliIadeBidonlar = useMemo(() => {
+    if (!seciliIslem) return []
+    return parseBidonList(seciliIslem.iade_bidonlar ?? seciliIslem.geri_alinan_bidonlar ?? "")
+  }, [seciliIslem])
+
+  const seciliKalanBidonlar = useMemo(() => {
+    if (!seciliIslem) return []
+    return bidonKalanHesapla(
+      seciliIslem.bidon_no ?? "",
+      seciliIslem.iade_bidonlar ?? seciliIslem.geri_alinan_bidonlar ?? ""
+    )
+  }, [seciliIslem])
+
   return (
     <div className="flex h-screen bg-gradient-to-br from-emerald-50 via-white to-amber-50 overflow-hidden font-sans relative">
       {/* ARKA PLAN PATTERN */}
       <div className="absolute inset-0 opacity-[0.03] pointer-events-none">
-        <div className="absolute inset-0" style={{
-          backgroundImage: `radial-gradient(circle at 2px 2px, #059669 1px, transparent 0)`,
-          backgroundSize: '40px 40px'
-        }}></div>
+        <div
+          className="absolute inset-0"
+          style={{
+            backgroundImage: `radial-gradient(circle at 2px 2px, #059669 1px, transparent 0)`,
+            backgroundSize: "40px 40px",
+          }}
+        ></div>
       </div>
 
       {/* ANIMATED GLOW EFFECTS */}
       <div className="absolute top-20 right-1/4 w-96 h-96 bg-emerald-200/30 rounded-full blur-3xl animate-pulse pointer-events-none"></div>
       <div className="absolute bottom-40 left-1/3 w-72 h-72 bg-amber-200/30 rounded-full blur-3xl animate-pulse delay-1000 pointer-events-none"></div>
+
+      {/* BIDON İADE MODAL */}
+      {iadeModalAcik && seciliIslem && (
+        <div className="absolute inset-0 z-50 bg-black/50 backdrop-blur-sm flex items-center justify-center p-4">
+          <div className="bg-white/90 backdrop-blur-xl rounded-3xl shadow-2xl w-full max-w-xl overflow-hidden border-2 border-white/60">
+            <div className="bg-gradient-to-r from-emerald-50 to-amber-50 p-6 border-b-2 border-slate-200 flex justify-between items-center">
+              <div>
+                <h2 className="text-2xl font-black text-slate-800">Bidon İadesi</h2>
+                <p className="text-sm font-bold text-slate-500 mt-1">
+                  {seciliIslem.ad_soyad} • {seciliIslem.telefon || "-"}
+                </p>
+              </div>
+              <button
+                onClick={() => setIadeModalAcik(false)}
+                className="text-slate-400 hover:text-red-500 text-3xl font-bold transition-colors"
+              >
+                ×
+              </button>
+            </div>
+
+            <div className="p-6 space-y-4">
+              <div className="flex gap-2">
+                <button
+                  type="button"
+                  onClick={selectAllIade}
+                  className="px-4 py-2 rounded-xl border-2 border-slate-200 bg-white hover:bg-slate-50 font-bold text-slate-700"
+                >
+                  Hepsini iade al
+                </button>
+                <button
+                  type="button"
+                  onClick={clearIade}
+                  className="px-4 py-2 rounded-xl border-2 border-slate-200 bg-white hover:bg-slate-50 font-bold text-slate-700"
+                >
+                  Temizle
+                </button>
+                <div className="ml-auto text-sm font-black text-slate-600 bg-slate-100 border-2 border-slate-200 px-4 py-2 rounded-xl">
+                  Seçili: {iadeSecim.length} / {seciliVerilenBidonlar.length}
+                </div>
+              </div>
+
+              {seciliVerilenBidonlar.length === 0 ? (
+                <div className="text-center text-slate-500 font-bold p-10">
+                  Bu kayıtta “Verilen Bidonlar” yok.
+                </div>
+              ) : (
+                <div className="grid grid-cols-5 gap-2">
+                  {seciliVerilenBidonlar.map((no) => {
+                    const selected = new Set(iadeSecim.map(String)).has(String(no))
+                    return (
+                      <button
+                        type="button"
+                        key={String(no)}
+                        onClick={() => toggleIade(no)}
+                        className={`py-3 rounded-2xl border-2 font-black transition-all ${
+                          selected
+                            ? "bg-emerald-600 text-white border-emerald-700 shadow-lg"
+                            : "bg-white text-slate-700 border-slate-200 hover:bg-slate-50"
+                        }`}
+                      >
+                        {no}
+                      </button>
+                    )
+                  })}
+                </div>
+              )}
+
+              <div className="grid grid-cols-3 gap-3">
+                <div className="p-4 rounded-2xl border-2 border-slate-200 bg-white">
+                  <p className="text-xs font-black text-slate-400 uppercase">Verilen</p>
+                  <p className="text-lg font-black text-slate-800">{seciliVerilenBidonlar.length}</p>
+                </div>
+                <div className="p-4 rounded-2xl border-2 border-emerald-300 bg-emerald-50">
+                  <p className="text-xs font-black text-emerald-700 uppercase">İade Alınan</p>
+                  <p className="text-lg font-black text-emerald-800">{iadeSecim.length}</p>
+                </div>
+                <div className="p-4 rounded-2xl border-2 border-amber-300 bg-amber-50">
+                  <p className="text-xs font-black text-amber-700 uppercase">Müşteride Kalan</p>
+                  <p className="text-lg font-black text-amber-800">
+                    {seciliVerilenBidonlar.length - iadeSecim.length}
+                  </p>
+                </div>
+              </div>
+
+              <button
+                type="button"
+                onClick={handleIadeKaydet}
+                className="w-full py-4 bg-gradient-to-r from-emerald-500 to-emerald-600 hover:from-emerald-600 hover:to-emerald-700 text-white font-bold rounded-2xl shadow-lg shadow-emerald-500/30 hover:shadow-emerald-500/50 transition-all transform hover:scale-[1.02] active:scale-[0.98] text-lg"
+              >
+                İadeyi Kaydet
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* SATIŞ MODAL */}
       {satisModalAcik && (
@@ -321,9 +546,7 @@ export default function CikisciPanel() {
             <form onSubmit={handleSatisKaydet} className="p-6 space-y-5">
               <div className="grid grid-cols-2 gap-4">
                 <div>
-                  <label className="block text-sm font-bold text-slate-700 mb-2">
-                    Ad Soyad
-                  </label>
+                  <label className="block text-sm font-bold text-slate-700 mb-2">Ad Soyad</label>
                   <input
                     name="ad_soyad"
                     value={satisForm.ad_soyad}
@@ -333,9 +556,7 @@ export default function CikisciPanel() {
                   />
                 </div>
                 <div>
-                  <label className="block text-sm font-bold text-slate-700 mb-2">
-                    Telefon
-                  </label>
+                  <label className="block text-sm font-bold text-slate-700 mb-2">Telefon</label>
                   <input
                     name="telefon"
                     value={satisForm.telefon}
@@ -349,9 +570,7 @@ export default function CikisciPanel() {
 
               <div className="grid grid-cols-2 gap-4">
                 <div>
-                  <label className="block text-sm font-bold text-slate-700 mb-2">
-                    Miktar (KG)
-                  </label>
+                  <label className="block text-sm font-bold text-slate-700 mb-2">Miktar (KG)</label>
                   <input
                     type="number"
                     name="satilan_kg"
@@ -361,9 +580,7 @@ export default function CikisciPanel() {
                   />
                 </div>
                 <div>
-                  <label className="block text-sm font-bold text-slate-700 mb-2">
-                    Fiyat (₺)
-                  </label>
+                  <label className="block text-sm font-bold text-slate-700 mb-2">Fiyat (₺)</label>
                   <input
                     type="number"
                     name="birim_fiyat"
@@ -378,8 +595,7 @@ export default function CikisciPanel() {
                 <span className="font-bold text-lg">TOPLAM TUTAR</span>
                 <span className="text-3xl font-black">
                   {(
-                    parseFloat(satisForm.satilan_kg || 0) *
-                    parseFloat(satisForm.birim_fiyat || 0)
+                    parseFloat(satisForm.satilan_kg || 0) * parseFloat(satisForm.birim_fiyat || 0)
                   ).toFixed(2)}{" "}
                   ₺
                 </span>
@@ -387,9 +603,7 @@ export default function CikisciPanel() {
 
               <div>
                 <div className="flex justify-between items-end mb-2">
-                  <label className="block text-sm font-bold text-slate-700">
-                    Bidon No
-                  </label>
+                  <label className="block text-sm font-bold text-slate-700">Bidon No</label>
 
                   <span className="text-xs font-bold text-slate-500 bg-slate-100 px-3 py-1.5 rounded-xl border-2 border-slate-200">
                     Verilecek Bidon:{" "}
@@ -406,14 +620,8 @@ export default function CikisciPanel() {
                   onKeyDown={(e) => {
                     if (e.key === " ") {
                       e.preventDefault()
-                      if (
-                        satisForm.bidon_no.length > 0 &&
-                        !satisForm.bidon_no.endsWith("-")
-                      ) {
-                        setSatisForm((prev) => ({
-                          ...prev,
-                          bidon_no: prev.bidon_no + "-",
-                        }))
+                      if (satisForm.bidon_no.length > 0 && !satisForm.bidon_no.endsWith("-")) {
+                        setSatisForm((prev) => ({ ...prev, bidon_no: prev.bidon_no + "-" }))
                       }
                     }
                   }}
@@ -441,7 +649,9 @@ export default function CikisciPanel() {
               <div className="absolute inset-0 bg-gradient-to-br from-emerald-400 to-emerald-600 rounded-full blur-xl opacity-30 animate-pulse"></div>
             </div>
           </div>
-          <h2 className="text-3xl font-black text-transparent bg-clip-text bg-gradient-to-r from-emerald-600 via-emerald-700 to-emerald-800 mb-4 text-center tracking-tight">Çıkış Paneli</h2>
+          <h2 className="text-3xl font-black text-transparent bg-clip-text bg-gradient-to-r from-emerald-600 via-emerald-700 to-emerald-800 mb-4 text-center tracking-tight">
+            Çıkış Paneli
+          </h2>
           <button
             onClick={() => setSatisModalAcik(true)}
             className="w-full py-4 bg-gradient-to-r from-slate-700 to-slate-800 hover:from-slate-800 hover:to-slate-900 text-white font-bold rounded-2xl shadow-lg hover:shadow-xl transition-all transform hover:scale-[1.02] active:scale-[0.98] flex items-center justify-center gap-2"
@@ -595,7 +805,7 @@ export default function CikisciPanel() {
                       )}
                       {islem.odeme_tipi === "para" && (
                         <span className="inline-block px-2.5 py-1 rounded-xl border-2 border-emerald-300 bg-gradient-to-r from-emerald-50 to-emerald-100 text-emerald-700 text-[10px] font-bold">
-                          PARA ÖDEMESİ
+                          MÜŞTERİ PARA ÖDEYECEK
                         </span>
                       )}
                       {islem.status === 2 && (
@@ -719,15 +929,11 @@ export default function CikisciPanel() {
                 <>
                   <div className="grid grid-cols-2 gap-4">
                     <div className="bg-white/80 backdrop-blur-sm p-4 rounded-2xl border-2 border-slate-200 shadow-lg">
-                      <label className="block text-sm font-bold text-slate-700 mb-1">
-                        Gelen Zeytin (KG)
-                      </label>
+                      <label className="block text-sm font-bold text-slate-700 mb-1">Gelen Zeytin (KG)</label>
                       <div className="text-lg font-black text-slate-800">{seciliIslem.zeytin_kg}</div>
                     </div>
                     <div className="bg-gradient-to-br from-amber-50 to-amber-100/50 p-4 rounded-2xl border-2 border-amber-300 shadow-lg">
-                      <label className="block text-sm font-bold text-amber-800 mb-1">
-                        Çıkan Yağ (KG)
-                      </label>
+                      <label className="block text-sm font-bold text-amber-800 mb-1">Çıkan Yağ (KG)</label>
                       <div className="text-lg font-black text-amber-900">{seciliIslem.cikan_yag}</div>
                     </div>
                   </div>
@@ -775,7 +981,7 @@ export default function CikisciPanel() {
                           seciliIslem.odeme_tipi === "para" ? "text-emerald-700" : "text-slate-500"
                         }`}
                       >
-                        PARA ÖDEMESİ
+                        MÜŞTERİ PARA ÖDEYECEK
                       </p>
                       <div className="text-3xl font-black text-slate-800">
                         {hazir?.firmaHakkiTL} <span className="text-sm text-slate-500">₺</span>
@@ -786,12 +992,10 @@ export default function CikisciPanel() {
                   <div className="p-8 bg-gradient-to-br from-white to-slate-50 border-2 border-slate-200 rounded-3xl shadow-2xl relative overflow-hidden backdrop-blur-sm">
                     <div className="absolute top-0 right-0 w-32 h-32 bg-emerald-100 rounded-full blur-3xl opacity-30"></div>
                     <div className="absolute bottom-0 left-0 w-32 h-32 bg-amber-100 rounded-full blur-3xl opacity-30"></div>
-                    
+
                     <div className="relative z-10 grid grid-cols-3 gap-6 text-center divide-x-2 divide-slate-100">
                       <div className="flex flex-col justify-center">
-                        <p className="text-xs font-bold text-slate-400 uppercase tracking-wider mb-2">
-                          KALAN YAĞ
-                        </p>
+                        <p className="text-xs font-bold text-slate-400 uppercase tracking-wider mb-2">KALAN YAĞ</p>
                         <div className="flex items-baseline justify-center gap-1">
                           <p className="text-5xl font-black text-slate-800">{hazir?.kalanYag}</p>
                           <p className="text-sm font-bold text-slate-400">KG</p>
@@ -805,26 +1009,57 @@ export default function CikisciPanel() {
 
                       <div className="flex flex-col justify-center">
                         <p className="text-xs font-bold text-slate-400 uppercase tracking-wider mb-2">
-                          VERİLECEK BİDON
+                          VERİLEN BİDON
                         </p>
+
                         <div className="flex items-baseline justify-center gap-1">
-                          <p className="text-5xl font-black text-slate-800">{hazir?.verilecekBidon}</p>
+                          <p className="text-5xl font-black text-slate-800">
+                            {(bidonOzetAyniTelefon?.genelToplam ?? hazir?.verilecekBidon) ?? 0}
+                          </p>
                           <p className="text-sm font-bold text-slate-400">ADET</p>
                         </div>
-                        <p className="text-[10px] text-slate-400 font-bold mt-1">NET / 52 KG</p>
                       </div>
                     </div>
                   </div>
                 </>
               )}
 
-              <div>
-                <label className="block text-sm font-bold text-slate-700 mb-2">
-                  Teslim Edilen Bidonlar
-                </label>
-                <div className="w-full px-5 py-4 bg-white/80 backdrop-blur-sm border-2 border-slate-200 rounded-2xl text-lg font-bold text-slate-800 text-center tracking-wider shadow-lg">
-                  {seciliIslem.bidon_no || "---"}
+              {/* VERİLEN / İADE / KALAN BIDONLAR */}
+              <div className="space-y-3">
+                <div>
+                  <label className="block text-sm font-bold text-slate-700 mb-2"> Müşteriye Verilen Bidonlar</label>
+                  <div className="w-full px-5 py-4 bg-white/80 backdrop-blur-sm border-2 border-slate-200 rounded-2xl text-lg font-bold text-slate-800 text-center tracking-wider shadow-lg">
+                    {seciliIslem.bidon_no || "---"}
+                  </div>
                 </div>
+
+                {seciliIslem.status === 3 && (
+                  <>
+                    <div className="grid grid-cols-3 gap-3">
+                      <div className="p-4 rounded-2xl border-2 border-slate-200 bg-white">
+                        <p className="text-xs font-black text-slate-400 uppercase">İade Alınan Bidonlar</p>
+                        <p className="text-base font-black text-slate-800">
+                          {(seciliIslem.iade_bidonlar ?? seciliIslem.geri_alinan_bidonlar) || "---"}
+                        </p>
+                      </div>
+
+                      <div className="p-4 rounded-2xl border-2 border-amber-300 bg-amber-50">
+                        <p className="text-xs font-black text-amber-700 uppercase">Müşteride Kalan Bidonlar</p>
+                        <p className="text-base font-black text-amber-900">
+                          {seciliKalanBidonlar.join("-") || "---"}
+                        </p>
+                      </div>
+
+                      <button
+                        type="button"
+                        onClick={openIadeModal}
+                        className="p-4 rounded-2xl border-2 border-emerald-300 bg-emerald-50 hover:bg-emerald-100 transition-all font-black text-emerald-800"
+                      >
+                        Bidon İadesi (Güncelle)
+                      </button>
+                    </div>
+                  </>
+                )}
               </div>
 
               {seciliIslem.status !== 3 ? (

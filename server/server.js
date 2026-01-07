@@ -21,12 +21,9 @@ db.serialize(() => {
   db.run("PRAGMA busy_timeout = 5000;")
 })
 
-// TÜRKİYE SAATİ FONKSİYONU
 function getTurkeyTimestamp() {
   const now = new Date()
-  const turkeyTime = new Date(
-    now.toLocaleString("en-US", { timeZone: "Europe/Istanbul" })
-  )
+  const turkeyTime = new Date(now.toLocaleString("en-US", { timeZone: "Europe/Istanbul" }))
 
   const year = turkeyTime.getFullYear()
   const month = String(turkeyTime.getMonth() + 1).padStart(2, "0")
@@ -38,7 +35,29 @@ function getTurkeyTimestamp() {
   return `${year}-${month}-${day} ${hours}:${minutes}:${seconds}`
 }
 
-// TABLO + UNIQUE INDEX (aktif kayıt varken aynı musteri_no girilemez)
+function normalizeTelefonTR(input) {
+  const digits = String(input || "").replace(/\D/g, "")
+  if (!digits) return ""
+  const with0 = digits[0] === "0" ? digits : "0" + digits
+  return with0.slice(0, 11)
+}
+
+function parseBidonList(str) {
+  const s = String(str || "").trim()
+  if (!s) return []
+  const parts = s
+    .replace(/[,\s]+/g, "-")
+    .split("-")
+    .map((x) => x.trim())
+    .filter(Boolean)
+  return Array.from(new Set(parts))
+}
+
+function formatBidonList(arr) {
+  const a = (arr || []).map((x) => String(x).trim()).filter(Boolean)
+  return Array.from(new Set(a)).join("-")
+}
+
 db.serialize(() => {
   db.run(
     `CREATE TABLE IF NOT EXISTS islemler (
@@ -56,6 +75,7 @@ db.serialize(() => {
       odeme_tipi TEXT DEFAULT 'yag',
 
       bidon_no TEXT,
+      iade_bidonlar TEXT DEFAULT '',
       notlar TEXT,
 
       status INTEGER DEFAULT 1,
@@ -67,6 +87,14 @@ db.serialize(() => {
     }
   )
 
+  db.run(`ALTER TABLE islemler ADD COLUMN iade_bidonlar TEXT DEFAULT ''`, (err) => {
+    if (err) {
+      if (!String(err.message || "").toLowerCase().includes("duplicate")) {
+        console.error("iade_bidonlar kolon ekleme hatası:", err.message)
+      }
+    }
+  })
+
   db.run(
     `
     CREATE UNIQUE INDEX IF NOT EXISTS uniq_active_musteri_no
@@ -76,9 +104,7 @@ db.serialize(() => {
     (err) => {
       if (err) {
         console.error("UNIQUE index oluşturma hatası:", err.message)
-        console.error(
-          "Muhtemelen DB'de aynı musteri_no için status!=3 birden fazla kayıt var."
-        )
+        console.error("Muhtemelen DB'de aynı musteri_no için status!=3 birden fazla kayıt var.")
       }
     }
   )
@@ -87,14 +113,10 @@ db.serialize(() => {
 const io = new Server(server, { cors: { origin: true, credentials: true } })
 
 app.get("/api/giris-bekleyenler", (req, res) => {
-  db.all(
-    "SELECT * FROM islemler WHERE status != 3 ORDER BY id DESC",
-    [],
-    (err, rows) => {
-      if (err) return res.status(500).json(err)
-      res.json(rows)
-    }
-  )
+  db.all("SELECT * FROM islemler WHERE status != 3 ORDER BY id DESC", [], (err, rows) => {
+    if (err) return res.status(500).json(err)
+    res.json(rows)
+  })
 })
 
 app.get("/api/liste", (req, res) => {
@@ -118,7 +140,7 @@ app.get("/api/musteri-bul/:no", (req, res) => {
 
 app.get("/api/yag-bekleyenler", (req, res) => {
   db.all(
-    "SELECT * FROM islemler WHERE status = 1 ORDER BY id DESC",
+    "SELECT * FROM islemler WHERE status = 1 ORDER BY created_at ASC, id ASC",
     [],
     (err, rows) => {
       if (err) return res.status(500).json(err)
@@ -128,16 +150,19 @@ app.get("/api/yag-bekleyenler", (req, res) => {
 })
 
 app.post("/api/giris", (req, res) => {
-  const { musteri_no, ad_soyad, telefon } = req.body
+  const { musteri_no, ad_soyad, telefon, giris_durum } = req.body
   const turkeyTime = getTurkeyTimestamp()
 
   if (!musteri_no || !ad_soyad) {
     return res.status(400).json({ msg: "Eksik bilgi" })
   }
 
+  const status = giris_durum === "bekleyecek" ? 0 : 1
+  const tel = normalizeTelefonTR(telefon)
+
   db.run(
-    "INSERT INTO islemler (musteri_no, ad_soyad, telefon, status, created_at) VALUES (?, ?, ?, 1, ?)",
-    [musteri_no, ad_soyad, telefon || "", turkeyTime],
+    "INSERT INTO islemler (musteri_no, ad_soyad, telefon, status, created_at) VALUES (?, ?, ?, ?, ?)",
+    [musteri_no, ad_soyad, tel || "", status, turkeyTime],
     function (err) {
       if (err) {
         if (err.message && err.message.includes("UNIQUE")) {
@@ -152,6 +177,19 @@ app.post("/api/giris", (req, res) => {
       res.json({ id: this.lastID })
     }
   )
+})
+
+app.put("/api/giris-sikilacak/:id", (req, res) => {
+  const id = req.params.id
+
+  db.run("UPDATE islemler SET status=1 WHERE id=? AND status=0", [id], function (err) {
+    if (err) return res.status(500).json(err)
+    if (this.changes === 0) {
+      return res.status(400).json({ msg: "Kayıt bekleyecek durumda değil." })
+    }
+    io.emit("veri-guncellendi")
+    res.json({ msg: "Kayıt sıkılacak olarak işaretlendi." })
+  })
 })
 
 app.put("/api/yag-islem/:id", (req, res) => {
@@ -205,25 +243,22 @@ app.put("/api/yag-islem/:id", (req, res) => {
 })
 
 app.post("/api/yag-satisi", (req, res) => {
-  const { ad_soyad, telefon, satilan_kg, birim_fiyat, bidon_no, notlar } =
-    req.body
+  const { ad_soyad, telefon, satilan_kg, birim_fiyat, bidon_no, notlar } = req.body
   const turkeyTime = getTurkeyTimestamp()
 
-  const toplam_tutar = (parseFloat(satilan_kg) * parseFloat(birim_fiyat)).toFixed(
-    2
-  )
+  const toplam_tutar = (parseFloat(satilan_kg) * parseFloat(birim_fiyat)).toFixed(2)
 
   const sql = `INSERT INTO islemler (
     musteri_no, ad_soyad, telefon,
     zeytin_kg, cikan_yag, hak_oran, yag_fiyati,
     firma_hakki, firma_hakki_tl, odeme_tipi,
-    bidon_no, notlar, status, created_at, finished_at
-  ) VALUES (?, ?, ?, 0, ?, 0, ?, 0, ?, 'SATIS', ?, ?, 3, ?, ?)`
+    bidon_no, iade_bidonlar, notlar, status, created_at, finished_at
+  ) VALUES (?, ?, ?, 0, ?, 0, ?, 0, ?, 'SATIS', ?, '', ?, 3, ?, ?)`
 
   const params = [
     "PERAKENDE",
     ad_soyad || "",
-    telefon || "",
+    normalizeTelefonTR(telefon) || "",
     satilan_kg,
     birim_fiyat,
     toplam_tutar,
@@ -237,6 +272,29 @@ app.post("/api/yag-satisi", (req, res) => {
     if (err) return res.status(500).json(err)
     io.emit("veri-guncellendi")
     res.json({ msg: "Satış kaydedildi" })
+  })
+})
+
+app.put("/api/bidon-iade/:id", (req, res) => {
+  const id = req.params.id
+  const { iade_bidonlar } = req.body
+
+  db.get("SELECT id, status, bidon_no, iade_bidonlar FROM islemler WHERE id = ?", [id], (err, row) => {
+    if (err) return res.status(500).json(err)
+    if (!row) return res.status(404).json({ msg: "Kayıt bulunamadı" })
+    if (row.status !== 3) return res.status(400).json({ msg: "Sadece geçmiş kayıtlarda iade güncellenebilir" })
+
+    const verilen = new Set(parseBidonList(row.bidon_no))
+    const gelen = parseBidonList(iade_bidonlar)
+
+    const temiz = gelen.filter((x) => verilen.has(x))
+    const out = formatBidonList(temiz)
+
+    db.run("UPDATE islemler SET iade_bidonlar = ? WHERE id = ?", [out, id], function (err2) {
+      if (err2) return res.status(500).json(err2)
+      io.emit("veri-guncellendi")
+      res.json({ msg: "Bidon iadesi kaydedildi", iade_bidonlar: out })
+    })
   })
 })
 

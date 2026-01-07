@@ -23,8 +23,7 @@ export default function Login({ onLogin }) {
           backgroundSize: '40px 40px'
         }}></div>
       </div>
-
-      {/* ANIMATED GLOW EFFECTS */}
+      
       <div className="absolute top-20 left-20 w-72 h-72 bg-emerald-200/40 rounded-full blur-3xl animate-pulse"></div>
       <div className="absolute bottom-20 right-20 w-96 h-96 bg-amber-200/40 rounded-full blur-3xl animate-pulse delay-1000"></div>
 
@@ -68,9 +67,9 @@ export default function Login({ onLogin }) {
                   className="w-full px-5 py-4 bg-white/80 border-2 border-slate-200 rounded-2xl text-slate-800 font-medium appearance-none focus:outline-none focus:border-emerald-400 focus:bg-white transition-all cursor-pointer backdrop-blur-sm hover:bg-white hover:border-slate-300 group-hover:shadow-md"
                 >
                   <option value="">Rolünüzü seçin</option>
-                  <option value="girisci">📝 Girişçi (Müşteri Kaydı)</option>
-                  <option value="yagci">🏭 Yağcı (İşlem)</option>
-                  <option value="cikisci">✅ Çıkışçı (Kontrol)</option>
+                  <option value="girisci">📝 Girişçi</option>
+                  <option value="yagci">🏭 Yağcı</option>
+                  <option value="cikisci">✅ Çıkışçı</option>
                 </select>
                 <div className="absolute right-4 top-1/2 -translate-y-1/2 pointer-events-none">
                   <svg
@@ -132,13 +131,25 @@ export default function Login({ onLogin }) {
         </div>
 
         {/* ALT BİLGİ */}
-        <div className="text-center mt-8">
-          <p className="text-sm text-slate-600 font-medium">
-            Sorun mu yaşıyorsunuz?{" "}
-            <span className="text-emerald-600 hover:text-emerald-700 cursor-pointer transition-colors font-semibold underline decoration-2 underline-offset-2">
-              Sistem yöneticisi ile iletişime geçin
+        <div className="text-center mt-10 opacity-80">
+          <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-white/70 border border-slate-200 shadow-sm">
+            <span className="text-xs text-slate-500 font-medium">
+              Made by
             </span>
-          </p>
+
+            <span className="text-sm font-bold text-slate-700">
+              Selim Kavaklıçeşme
+            </span>
+
+            <span className="text-slate-300">•</span>
+
+            <a
+              href="tel:+905516021021"
+              className="text-sm font-bold text-emerald-600 hover:text-emerald-700 transition"
+            >
+              0551 602 1021
+            </a>
+          </div>
         </div>
       </div>
     </div>
