@@ -9,6 +9,17 @@ A full-stack web application built with **React (Vite)**, **Express.js**, and **
 - **Database:** Lightweight and serverless data storage using SQLite.
 - **Performance:** Optimized build and fast development server.
 
+## 📸 Screenshots
+
+Here is a glimpse of the application interface:
+
+![Application Dashboard](https://github.com/user-attachments/assets/80b3b1bc-1186-4f91-b425-2225d81abb4e)
+
+![Sales Interface](https://github.com/user-attachments/assets/d907664c-6d07-4812-93ea-5bcbc9e4d974)
+
+![Tracking Details](https://github.com/user-attachments/assets/65bbb5e1-df36-4696-b0c0-d7ac5d57098d)
+
+
 ## 🛠️ Tech Stack
 
 ### Frontend
