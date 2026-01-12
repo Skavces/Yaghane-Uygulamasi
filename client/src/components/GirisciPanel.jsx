@@ -116,7 +116,6 @@ export default function GirisciPanel() {
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-emerald-50 via-white to-amber-50 p-6 font-sans relative overflow-hidden">
-      {/* ARKA PLAN PATTERN */}
       <div className="absolute inset-0 opacity-[0.03] pointer-events-none">
         <div
           className="absolute inset-0"
@@ -127,7 +126,7 @@ export default function GirisciPanel() {
         ></div>
       </div>
 
-      {/* ANIMATED GLOW EFFECTS */}
+      {/* GLOW */}
       <div className="absolute top-20 right-1/4 w-96 h-96 bg-emerald-200/30 rounded-full blur-3xl animate-pulse pointer-events-none"></div>
       <div className="absolute bottom-40 left-1/3 w-72 h-72 bg-amber-200/30 rounded-full blur-3xl animate-pulse delay-1000 pointer-events-none"></div>
 
@@ -248,10 +247,13 @@ export default function GirisciPanel() {
                     <input
                       name="ad_soyad"
                       value={formData.ad_soyad}
-                      onChange={handleChange}
+                      onChange={(e) => {
+                        const val = e.target.value.toLocaleUpperCase("tr-TR")
+                        setFormData({ ...formData, ad_soyad: val })
+                      }}
                       required
                       className="w-full px-5 py-4 bg-white border-2 border-slate-200 rounded-2xl text-lg font-bold text-slate-800 placeholder:text-slate-400 focus:outline-none focus:border-emerald-400 focus:ring-2 focus:ring-emerald-100 focus:bg-white transition-all shadow-sm hover:shadow-md"
-                      placeholder="Nadir Kaya"
+                      placeholder="NADİR KAYA"
                     />
                   </div>
 

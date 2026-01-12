@@ -133,7 +133,6 @@ export default function YagciPanel() {
     formData.odeme_tipi,
   ])
 
-
   const handleChange = (e) => {
     setFormData({ ...formData, [e.target.name]: e.target.value })
   }
@@ -180,9 +179,40 @@ export default function YagciPanel() {
 
     const q = (musteriNoAra || "").trim().replace(/\D/g, "")
     if (!q) return sorted
-    return sorted.filter((m) => String(m.musteri_no || "").includes(q))
+
+    return sorted.filter((m) =>
+      String(m.musteri_no || "").startsWith(q)
+    )
   }, [liste, musteriNoAra])
 
+  const countBidon = (str) => {
+    const s = String(str || "").trim()
+    if (!s) return 0
+
+    
+    const parts = s
+    .replace(/[,\s]+/g, "-")
+    .split("-")
+    .map((x) => x.trim())
+    .filter(Boolean)
+    
+    return parts.length
+  }
+  
+  const verilenBidonSayisi = useMemo(() => {
+    return countBidon(formData.bidon_no)
+  }, [formData.bidon_no])
+
+  const normalizeTelefon = (input) => {
+    let d = String(input || "").replace(/\D/g, "")
+    if (d.startsWith("90")) d = d.slice(2)
+    if (d.length === 10) d = "0" + d
+    if (d.length > 11) d = d.slice(0, 11)
+    if (d.length !== 11) return d
+
+    return d.replace(/(\d{4})(\d{3})(\d{2})(\d{2})/, "$1 $2 $3 $4")
+  }
+  
   return (
     <div className="min-h-screen bg-gradient-to-br from-emerald-50 via-white to-amber-50 p-6 relative overflow-hidden">
       {/* ARKA PLAN PATTERN */}
@@ -196,7 +226,7 @@ export default function YagciPanel() {
         ></div>
       </div>
 
-      {/* ANIMATED GLOW EFFECTS */}
+      {/* GLOW */}
       <div className="absolute top-20 right-1/4 w-96 h-96 bg-emerald-200/30 rounded-full blur-3xl animate-pulse pointer-events-none"></div>
       <div className="absolute bottom-40 left-1/3 w-72 h-72 bg-amber-200/30 rounded-full blur-3xl animate-pulse delay-1000 pointer-events-none"></div>
 
@@ -211,7 +241,7 @@ export default function YagciPanel() {
           </p>
         </div>
 
-        {/* TOP BANNER */}
+        {/* ÜST KISIM */}
         {(hata || mesaj) && (
           <div className="mb-6">
             {hata && (
@@ -269,7 +299,7 @@ export default function YagciPanel() {
                 </button>
               </div>
 
-              {/* MÜŞTERİ NO ARA */}
+              {/* MÜŞTERİ NO İLE ARAMA */}
               <div className="mb-4">
                 <label className="block text-xs font-bold text-slate-600 uppercase tracking-wider mb-2">
                   Müşteri No İle Ara
@@ -340,8 +370,8 @@ export default function YagciPanel() {
                       <div className="flex items-center justify-between">
                         <div>
                           <p className="font-bold text-slate-800 text-lg">{m.ad_soyad}</p>
-                          <p className="text-sm text-slate-500 font-medium mt-1">
-                            {m.telefon || "-"}
+                          <p className="text-m text-slate-500 font-medium mt-1">
+                            {m.telefon ? normalizeTelefon(m.telefon) : "-"}
                           </p>
                         </div>
                         <div className="text-right">
@@ -385,8 +415,8 @@ export default function YagciPanel() {
                         <h3 className="text-2xl font-black text-slate-800">
                           {secili.ad_soyad}
                         </h3>
-                        <p className="mt-2 text-sm font-semibold text-slate-600">
-                          {secili.telefon ? secili.telefon : "-"}
+                        <p className="mt-2 text-xl font-semibold text-slate-600">
+                          {secili.telefon ? normalizeTelefon(secili.telefon) : "-"}
                         </p>
                       </div>
                       <div className="text-right">
@@ -556,7 +586,7 @@ export default function YagciPanel() {
                   {/* BİDON NO */}
                   <div>
                     <label className="block text-sm font-bold text-slate-700 mb-2">
-                      Bidon Numarası
+                      Verilen Bidon Numaraları
                     </label>
 
                     <textarea
@@ -598,6 +628,12 @@ export default function YagciPanel() {
                       className="w-full px-5 py-4 bg-white border-2 border-slate-200 rounded-2xl text-lg font-bold text-slate-800 text-center placeholder:text-slate-400 focus:outline-none focus:border-slate-400 focus:bg-white transition-all tracking-wider resize-none overflow-hidden shadow-sm hover:shadow-md"
                       placeholder="1234-56-7890"
                     />
+                  </div>
+
+                  <div className="mt-2 text-center">
+                    <span className="inline-flex items-center gap-2 px-4 py-2 rounded-2xl border-2 border-slate-200 bg-slate-50 text-slate-700 font-black">
+                      Verilen Bidon Sayısı: <span className="text-emerald-700">{verilenBidonSayisi}</span>
+                    </span>
                   </div>
 
                   {/* NOTLAR */}

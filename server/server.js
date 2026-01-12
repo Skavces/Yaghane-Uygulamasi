@@ -245,9 +245,7 @@ app.put("/api/yag-islem/:id", (req, res) => {
 app.post("/api/yag-satisi", (req, res) => {
   const { ad_soyad, telefon, satilan_kg, birim_fiyat, bidon_no, notlar } = req.body
   const turkeyTime = getTurkeyTimestamp()
-
   const toplam_tutar = (parseFloat(satilan_kg) * parseFloat(birim_fiyat)).toFixed(2)
-
   const sql = `INSERT INTO islemler (
     musteri_no, ad_soyad, telefon,
     zeytin_kg, cikan_yag, hak_oran, yag_fiyati,
@@ -310,6 +308,35 @@ app.put("/api/cikis/:id", (req, res) => {
       res.json({ msg: "Bitti" })
     }
   )
+})
+
+app.put("/api/bidon-no/:id", (req, res) => {
+  const id = req.params.id
+  const bidon_no = String(req.body?.bidon_no || "")
+
+  db.get("SELECT id, status, odeme_tipi, iade_bidonlar FROM islemler WHERE id = ?", [id], (err, row) => {
+    if (err) return res.status(500).json(err)
+    if (!row) return res.status(404).json({ msg: "Kayıt bulunamadı" })
+    if (row.odeme_tipi === "SATIS") return res.status(400).json({ msg: "Satış kaydında bidon düzenlenmez" })
+
+    const verilen = parseBidonList(bidon_no)
+    const outBidon = formatBidonList(verilen)
+
+    const iade = parseBidonList(row.iade_bidonlar)
+    const verilenSet = new Set(verilen.map(String))
+    const temizIade = iade.filter((x) => verilenSet.has(String(x)))
+    const outIade = formatBidonList(temizIade)
+
+    db.run(
+      "UPDATE islemler SET bidon_no = ?, iade_bidonlar = ? WHERE id = ?",
+      [outBidon, outIade, id],
+      function (err2) {
+        if (err2) return res.status(500).json(err2)
+        io.emit("veri-guncellendi")
+        res.json({ msg: "Bidon numaraları güncellendi", bidon_no: outBidon, iade_bidonlar: outIade })
+      }
+    )
+  })
 })
 
 const clientBuildPath = path.join(__dirname, "../client/dist")
