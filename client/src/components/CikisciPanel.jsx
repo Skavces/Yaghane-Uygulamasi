@@ -77,12 +77,12 @@ export default function CikisciPanel() {
       .split("-")
       .map((x) => x.trim())
       .filter(Boolean)
-    return Array.from(new Set(parts))
+    return parts
   }
 
   const formatBidonList = (arr) => {
     const a = (arr || []).map((x) => String(x).trim()).filter(Boolean)
-    return Array.from(new Set(a)).join("-")
+    return a.join("-")
   }
 
   const bidonKalanHesapla = (verilenStr, iadeStr) => {
@@ -368,7 +368,7 @@ export default function CikisciPanel() {
       setMesaj("Bidon numaraları güncellendi.")
       setSeciliIslem((prev) => (prev ? { ...prev, bidon_no: payload.bidon_no } : prev))
       fetchListe()
-      setIsEditing(false) // Kaydettikten sonra kapat
+      setIsEditing(false)
       setTimeout(() => setMesaj(""), 2500)
     } catch (e) {
       console.error(e)
@@ -448,11 +448,9 @@ export default function CikisciPanel() {
         ></div>
       </div>
 
-      {/* GLOW */}
       <div className="absolute top-20 right-1/4 w-96 h-96 bg-emerald-200/30 rounded-full blur-3xl animate-pulse pointer-events-none"></div>
       <div className="absolute bottom-40 left-1/3 w-72 h-72 bg-amber-200/30 rounded-full blur-3xl animate-pulse delay-1000 pointer-events-none"></div>
 
-      {/* İADE*/}
       {iadeModalAcik && seciliIslem && (
         <div className="absolute inset-0 z-50 bg-black/50 backdrop-blur-sm flex items-center justify-center p-4">
           <div className="bg-white/90 backdrop-blur-xl rounded-3xl shadow-2xl w-full max-w-xl overflow-hidden border-2 border-white/60">
@@ -531,7 +529,6 @@ export default function CikisciPanel() {
         </div>
       )}
 
-      {/* SATIŞ */}
       {satisModalAcik && (
         <div className="absolute inset-0 z-50 bg-black/50 backdrop-blur-sm flex items-center justify-center p-4">
           <div className="bg-white/90 backdrop-blur-xl rounded-3xl shadow-2xl w-full max-w-lg overflow-hidden border-2 border-white/60">
@@ -639,7 +636,6 @@ export default function CikisciPanel() {
         </div>
       )}
 
-      {/* SOL PANEL */}
       <div className="w-1/2 bg-white/80 backdrop-blur-xl border-r-2 border-white/60 flex flex-col h-full shadow-2xl z-10 relative">
         <div className="p-6 border-b-2 border-slate-100">
           <h2 className="text-3xl font-black text-transparent bg-clip-text bg-gradient-to-r from-emerald-600 via-emerald-700 to-emerald-800 mb-4 text-center tracking-tight">
@@ -683,7 +679,6 @@ export default function CikisciPanel() {
           </div>
         </div>
 
-        {/* BEKLEYEN: MÜŞTERİ NO */}
         {aktifTab === "bekleyen" && (
           <div className="px-6 pt-3 space-y-3">
             <div>
@@ -714,7 +709,6 @@ export default function CikisciPanel() {
           </div>
         )}
 
-        {/* GEÇMİŞ: TELEFON + EXCEL */}
         {aktifTab === "gecmis" && (
           <div className="px-6 pt-3 space-y-3">
             <div>
@@ -829,7 +823,6 @@ export default function CikisciPanel() {
         </div>
       </div>
 
-      {/* SAĞ PANEL */}
       <div className="w-1/2 flex flex-col h-full overflow-hidden relative">
         {mesaj && (
           <div className="fixed top-6 left-1/2 transform -translate-x-1/2 z-[9999]">
@@ -848,7 +841,6 @@ export default function CikisciPanel() {
                 <div>
                   <p className="text-xs font-bold text-slate-500 uppercase mb-1 tracking-wider">Müşteri Bilgisi</p>
                   <h3 className="text-2xl font-black text-slate-800">{seciliIslem.ad_soyad}</h3>
-                   {/* --- BURAYI DEĞİŞTİRDİM: Telefonu formatlı göster --- */}
                   <p className="text-slate-600 font-semibold">{normalizeTelefon(seciliIslem.telefon)}</p>
                 </div>
                 <div className="text-right">
@@ -903,6 +895,7 @@ export default function CikisciPanel() {
 
                   <div className="p-8 bg-gradient-to-br from-white to-slate-50 border-2 border-slate-200 rounded-3xl shadow-2xl backdrop-blur-sm">
                     <div className="grid grid-cols-3 gap-6 text-center divide-x-2 divide-slate-100">
+                      
                       <div className="flex flex-col justify-center">
                         <p className="text-xs font-bold text-slate-400 uppercase tracking-wider mb-2">KALAN YAĞ</p>
                         <div className="flex items-baseline justify-center gap-1">
@@ -910,17 +903,17 @@ export default function CikisciPanel() {
                           <p className="text-sm font-bold text-slate-400">KG</p>
                         </div>
                       </div>
+
                       <div className="flex flex-col justify-center bg-gradient-to-br from-orange-50 to-orange-100/50 rounded-2xl -my-4 py-6 shadow-inner">
                         <p className="text-xs font-bold text-orange-500 uppercase tracking-wider mb-2">ORAN</p>
                         <p className="text-5xl font-black text-orange-600">{hazir?.randiman}</p>
                       </div>
+
                       <div className="flex flex-col justify-center">
-                        <p className="text-xs font-bold text-slate-400 uppercase tracking-wider mb-2">VERİLEN BİDON</p>
+                        <p className="text-xs font-bold text-slate-400 uppercase tracking-wider mb-2">MÜŞTERİDE KALAN BİDON</p>
                         <div className="flex items-baseline justify-center gap-1">
                           <p className="text-5xl font-black text-slate-800">
-                            {(bidonOzetAyniTelefon?.genelToplam ??
-                              (seciliVerilenBidonlar.length > 0 ? seciliVerilenBidonlar.length : hazir?.verilecekBidon) ??
-                              0)}
+                            {seciliKalanBidonlar.length}
                           </p>
                           <p className="text-sm font-bold text-slate-400">ADET</p>
                         </div>
@@ -930,7 +923,6 @@ export default function CikisciPanel() {
                 </>
               )}
 
-              {/* VERİLEN BIDON NUMARALARI */}
               <div className="space-y-2">
                 <div className="flex items-end justify-between gap-3">
                   <label className="block text-sm font-bold text-slate-700">
@@ -982,7 +974,7 @@ export default function CikisciPanel() {
                     value={bidonEdit}
                     onChange={(e) => setBidonEdit(sanitizeBidonInput(e.target.value))}
                     onKeyDown={(e) => {
-                      if (e.key === " ") {
+                      if (e.key === " " || e.key === "Enter") {
                         e.preventDefault()
                         setBidonEdit((prev) => (prev && !prev.endsWith("-") ? prev + "-" : prev))
                       }
@@ -1008,8 +1000,6 @@ export default function CikisciPanel() {
                 </div>
               </div>
 
-
-              {/* İADE ÖZET + BUTON */}
               {seciliIslem.status === 3 && (
                 <>
                   <div className="grid grid-cols-3 gap-3">

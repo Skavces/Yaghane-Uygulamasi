@@ -126,12 +126,10 @@ export default function GirisciPanel() {
         ></div>
       </div>
 
-      {/* GLOW */}
       <div className="absolute top-20 right-1/4 w-96 h-96 bg-emerald-200/30 rounded-full blur-3xl animate-pulse pointer-events-none"></div>
       <div className="absolute bottom-40 left-1/3 w-72 h-72 bg-amber-200/30 rounded-full blur-3xl animate-pulse delay-1000 pointer-events-none"></div>
 
       <div className="max-w-5xl mx-auto relative z-10">
-        {/* HEADER */}
         <div className="text-center mb-8">
           <h1 className="text-4xl font-black text-transparent bg-clip-text bg-gradient-to-r from-emerald-600 via-emerald-700 to-emerald-800 mb-2 tracking-tight">
             Müşteri Giriş Paneli
@@ -139,7 +137,6 @@ export default function GirisciPanel() {
           <p className="text-slate-600 font-medium">Müşteri Takip ve Kayıt Sistemi</p>
         </div>
 
-        {/* TAB NAVİGASYON */}
         <div className="bg-white/80 backdrop-blur-xl rounded-t-3xl shadow-2xl border-2 border-white/60 border-b-0 overflow-hidden">
           <div className="flex">
             <button
@@ -197,7 +194,6 @@ export default function GirisciPanel() {
           </div>
         </div>
 
-        {/* İÇERİK ALANI */}
         <div className="bg-white/80 backdrop-blur-xl rounded-b-3xl shadow-2xl border-2 border-white/60 border-t-0 p-8 min-h-[500px] relative overflow-hidden">
           <div className="absolute inset-0 bg-gradient-to-br from-emerald-50/30 to-amber-50/30 pointer-events-none"></div>
 
@@ -215,11 +211,9 @@ export default function GirisciPanel() {
               </div>
             )}
 
-            {/* FORM SEKMESİ */}
             {activeTab === "form" && (
               <div className="max-w-lg mx-auto space-y-8 animate-fadeIn">
                 <form onSubmit={handleSubmit} className="space-y-6">
-                  {/* MÜŞTERİ NUMARASI */}
                   <div>
                     <label className="block text-sm font-bold text-slate-700 mb-3 uppercase tracking-wide">
                       Müşteri Numarası
@@ -232,14 +226,15 @@ export default function GirisciPanel() {
                         setFormData({ ...formData, musteri_no: val })
                       }}
                       required
+                      onInvalid={(e) => e.target.setCustomValidity("Müşteri numarası boş bırakılamaz")}
+                      onInput={(e) => e.target.setCustomValidity("")}
                       autoFocus
                       maxLength={3}
-                      className="w-full px-4 py-6 bg-white border-2 border-slate-200 rounded-2xl text-5xl font-black text-slate-800 text-center tracking-[0.5em] placeholder:text-slate-300 focus:outline-none focus:border-emerald-400 focus:ring-4 focus:ring-emerald-50/50 focus:bg-white transition-all shadow-lg hover:shadow-xl"
-                      placeholder="101"
+                      className="w-full px-4 py-6 bg-white border-2 border-slate-200 rounded-2xl text-4xl font-black text-slate-800 text-center tracking-[0.5em] placeholder:text-slate-300 focus:outline-none focus:border-emerald-400 focus:ring-4 focus:ring-emerald-50/50 focus:bg-white transition-all shadow-lg hover:shadow-xl"
+                      placeholder="000"
                     />
                   </div>
 
-                  {/* AD SOYAD */}
                   <div>
                     <label className="block text-sm font-bold text-slate-700 mb-3 uppercase tracking-wide">
                       Ad Soyad
@@ -252,12 +247,13 @@ export default function GirisciPanel() {
                         setFormData({ ...formData, ad_soyad: val })
                       }}
                       required
+                      onInvalid={(e) => e.target.setCustomValidity("Ad soyad boş bırakılamaz")}
+                      onInput={(e) => e.target.setCustomValidity("")}
                       className="w-full px-5 py-4 bg-white border-2 border-slate-200 rounded-2xl text-lg font-bold text-slate-800 placeholder:text-slate-400 focus:outline-none focus:border-emerald-400 focus:ring-2 focus:ring-emerald-100 focus:bg-white transition-all shadow-sm hover:shadow-md"
                       placeholder="NADİR KAYA"
                     />
                   </div>
 
-                  {/* TELEFON */}
                   <div>
                     <label className="block text-sm font-bold text-slate-700 mb-3 uppercase tracking-wide">
                       Telefon
@@ -267,6 +263,9 @@ export default function GirisciPanel() {
                       value={formData.telefon}
                       inputMode="numeric"
                       autoComplete="tel"
+                      required
+                      onInvalid={(e) => e.target.setCustomValidity("Telefon numarası boş bırakılamaz")}
+                      onInput={(e) => e.target.setCustomValidity("")}
                       onChange={(e) => {
                         const formatted = formatTelefonTR(e.target.value)
                         setFormData({ ...formData, telefon: formatted })
@@ -282,7 +281,6 @@ export default function GirisciPanel() {
                     />
                   </div>
 
-                  {/* KAYIT TÜRÜ */}
                   <div>
                     <label className="block text-sm font-bold text-slate-700 mb-3 uppercase tracking-wide">
                       Kayıt Türü
@@ -325,7 +323,6 @@ export default function GirisciPanel() {
                     </div>
                   </div>
 
-                  {/* KAYDET BUTONU */}
                   <button
                     type="submit"
                     className="w-full py-5 bg-gradient-to-r from-emerald-500 to-emerald-600 hover:from-emerald-600 hover:to-emerald-700 text-white font-bold rounded-2xl transition-all transform hover:scale-[1.02] active:scale-[0.98] shadow-lg shadow-emerald-500/30 hover:shadow-emerald-500/50 flex items-center justify-center gap-3 text-lg mt-4 group"
@@ -349,10 +346,8 @@ export default function GirisciPanel() {
               </div>
             )}
 
-            {/* LİSTE SEKMESİ */}
             {activeTab === "liste" && (
               <div className="space-y-6 animate-fadeIn">
-                {/* BAŞLIK VE YENİLE BUTONU */}
                 <div className="flex justify-between items-center pb-4 border-b-2 border-slate-100">
                   <div>
                     <h3 className="text-2xl font-black text-slate-800">Takip Listesi</h3>
@@ -376,7 +371,6 @@ export default function GirisciPanel() {
                   </button>
                 </div>
 
-                {/* LİSTE İÇERİĞİ */}
                 {kayitlar.length === 0 ? (
                   <div className="text-center py-20 bg-gradient-to-br from-slate-50 to-slate-100 rounded-3xl border-2 border-dashed border-slate-300">
                     <div className="bg-white w-20 h-20 mx-auto rounded-full flex items-center justify-center shadow-lg mb-4 border-2 border-slate-200">

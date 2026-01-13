@@ -1,18 +1,51 @@
 import { useState } from "react"
+import { ClipboardList, Factory, PackageCheck, Leaf } from "lucide-react"
 
 export default function Login({ onLogin }) {
-  const [user, setUser] = useState("")
+  const [selectedRole, setSelectedRole] = useState("")
   const [error, setError] = useState("")
 
-  const handleLogin = (e) => {
-    e.preventDefault()
+  const handleLogin = (role) => {
     setError("")
-    if (!user) {
+    if (!role) {
       setError("Bir rol seçmen lazım.")
       return
     }
-    onLogin(user)
+    onLogin(role)
   }
+
+  const roles = [
+    {
+      id: "girisci",
+      title: "Girişçi",
+      icon: ClipboardList,
+      description: "Zeytin teslim alma",
+      gradient: "from-emerald-400 to-emerald-500",
+      hoverGradient: "from-emerald-500 to-emerald-600",
+      bgGlow: "bg-emerald-200/40",
+      shadowColor: "shadow-emerald-500/30 hover:shadow-emerald-500/50"
+    },
+    {
+      id: "yagci",
+      title: "Yağcı",
+      icon: Factory,
+      description: "Yağ üretim süreci",
+      gradient: "from-emerald-500 to-emerald-600",
+      hoverGradient: "from-emerald-600 to-emerald-700",
+      bgGlow: "bg-emerald-200/40",
+      shadowColor: "shadow-emerald-500/30 hover:shadow-emerald-500/50"
+    },
+    {
+      id: "cikisci",
+      title: "Çıkışçı",
+      icon: PackageCheck,
+      description: "Ürün teslimat",
+      gradient: "from-emerald-600 to-emerald-700",
+      hoverGradient: "from-emerald-700 to-emerald-800",
+      bgGlow: "bg-emerald-200/40",
+      shadowColor: "shadow-emerald-500/30 hover:shadow-emerald-500/50"
+    }
+  ]
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-emerald-50 via-white to-amber-50 flex items-center justify-center p-6 relative overflow-hidden">
@@ -22,13 +55,12 @@ export default function Login({ onLogin }) {
           backgroundSize: '40px 40px'
         }}></div>
       </div>
-      
+
       <div className="absolute top-20 left-20 w-72 h-72 bg-emerald-200/40 rounded-full blur-3xl animate-pulse"></div>
       <div className="absolute bottom-20 right-20 w-96 h-96 bg-amber-200/40 rounded-full blur-3xl animate-pulse delay-1000"></div>
 
-      <div className="w-full max-w-md relative z-10">
-        {/* LOGO/BAŞLIK ALANI */}
-        <div className="text-center mb-10">
+      <div className="w-full max-w-6xl relative z-10">
+        <div className="text-center mb-12">
           <div className="inline-flex items-center justify-center mb-6">
             <div className="relative">
               <div className="absolute inset-0 bg-gradient-to-br from-emerald-400 to-emerald-600 rounded-full blur-2xl opacity-30 animate-pulse"></div>
@@ -37,111 +69,131 @@ export default function Login({ onLogin }) {
           </div>
           
           <div className="space-y-2 mb-3">
-            <h1 className="text-4xl font-black text-transparent bg-clip-text bg-gradient-to-r from-red-500 via-red-600 to-red-700 tracking-tight">
+            <h1 className="text-4xl md:text-5xl font-black text-transparent bg-clip-text bg-gradient-to-r from-emerald-500 via-emerald-600 to-emerald-700 tracking-tight pb-1">
               KAYA KARDEŞLER
             </h1>
-            <h2 className="text-2xl font-bold text-slate-800 tracking-wide">
+            <h2 className="text-2xl md:text-3xl font-bold text-slate-800 tracking-wide">
               ZEYTİNYAĞI FABRİKASI
             </h2>
           </div>
           
-          <p className="text-slate-600 text-sm font-medium">Devam etmek için rol seçin</p>
+          <p className="text-slate-600 text-base font-medium">Devam etmek için rolünüzü seçin</p>
         </div>
 
-        {/* GİRİŞ KARTI */}
-        <div className="bg-white/80 backdrop-blur-xl rounded-3xl shadow-2xl border border-white/60 p-8 relative overflow-hidden">
-          {/* Card Glow */}
-          <div className="absolute inset-0 bg-gradient-to-br from-emerald-50/50 to-transparent pointer-events-none"></div>
-          
-          <form onSubmit={handleLogin} className="space-y-6 relative z-10">
-            {/* KULLANICI SEÇİMİ */}
-            <div>
-              <label className="block text-sm font-semibold text-slate-700 mb-3">
-                Kullanıcı Rolü
-              </label>
-              <div className="relative group">
-                <select
-                  value={user}
-                  onChange={(e) => setUser(e.target.value)}
-                  className="w-full px-5 py-4 bg-white/80 border-2 border-slate-200 rounded-2xl text-slate-800 font-medium appearance-none focus:outline-none focus:border-emerald-400 focus:bg-white transition-all cursor-pointer backdrop-blur-sm hover:bg-white hover:border-slate-300 group-hover:shadow-md"
-                >
-                  <option value="">Rolünüzü seçin</option>
-                  <option value="girisci">📝 Girişçi</option>
-                  <option value="yagci">🏭 Yağcı</option>
-                  <option value="cikisci">✅ Çıkışçı</option>
-                </select>
-                <div className="absolute right-4 top-1/2 -translate-y-1/2 pointer-events-none">
-                  <svg
-                    className="w-5 h-5 text-slate-400 group-hover:text-slate-600 transition-colors"
-                    fill="none"
-                    stroke="currentColor"
-                    viewBox="0 0 24 24"
-                  >
-                    <path
-                      strokeLinecap="round"
-                      strokeLinejoin="round"
-                      strokeWidth={2}
-                      d="M19 9l-7 7-7-7"
-                    />
-                  </svg>
-                </div>
-              </div>
-            </div>
-
-            {/* HATA MESAJI */}
-            {error && (
-              <div className="flex items-center gap-3 p-4 bg-red-50 border-2 border-red-200 rounded-2xl animate-shake">
-                <svg
-                  className="w-5 h-5 text-red-500 flex-shrink-0"
-                  fill="currentColor"
-                  viewBox="0 0 20 20"
-                >
-                  <path
-                    fillRule="evenodd"
-                    d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z"
-                    clipRule="evenodd"
-                  />
-                </svg>
-                <p className="text-sm text-red-700 font-semibold">{error}</p>
-              </div>
-            )}
-
-            {/* GİRİŞ BUTONU */}
-            <button
-              type="submit"
-              className="w-full py-4 bg-gradient-to-r from-emerald-500 to-emerald-600 hover:from-emerald-600 hover:to-emerald-700 text-white font-bold rounded-2xl transition-all shadow-lg shadow-emerald-500/30 hover:shadow-emerald-500/50 hover:scale-[1.02] active:scale-[0.98] flex items-center justify-center gap-3 text-lg group"
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-8 mb-8">
+          {roles.map((role, index) => (
+            <div
+              key={role.id}
+              className={`relative group cursor-pointer transition-all duration-500 ${
+                index === 1 ? 'md:-translate-y-8' : ''
+              }`}
+              onClick={() => {
+                setSelectedRole(role.id)
+                handleLogin(role.id)
+              }}
             >
-              <span>Giriş Yap</span>
-              <svg
-                className="w-5 h-5 group-hover:translate-x-1 transition-transform"
-                fill="none"
-                stroke="currentColor"
-                viewBox="0 0 24 24"
-              >
-                <path
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  strokeWidth={2.5}
-                  d="M13 7l5 5m0 0l-5 5m5-5H6"
-                />
-              </svg>
-            </button>
-          </form>
+              <div className={`relative bg-white rounded-3xl overflow-hidden transition-all duration-500 ${
+                selectedRole === role.id 
+                  ? 'shadow-2xl ring-4 ring-emerald-400 scale-105' 
+                  : 'shadow-xl hover:shadow-2xl hover:scale-105'
+              }`}>
+
+                <div className="h-32 relative overflow-hidden bg-gradient-to-br from-emerald-100 to-emerald-50">
+                  {index === 0 && (
+                    <div className="absolute inset-0" style={{
+                      backgroundImage: `radial-gradient(circle, #059669 1px, transparent 1px)`,
+                      backgroundSize: '20px 20px',
+                      opacity: 0.2
+                    }}></div>
+                  )}
+                  {index === 1 && (
+                    <svg className="absolute inset-0 w-full h-full opacity-20" viewBox="0 0 100 100" preserveAspectRatio="none">
+                      <path d="M0,50 Q25,30 50,50 T100,50 L100,100 L0,100 Z" fill="#059669"/>
+                      <path d="M0,60 Q25,40 50,60 T100,60 L100,100 L0,100 Z" fill="#059669" opacity="0.5"/>
+                    </svg>
+                  )}
+                  {index === 2 && (
+                    <div className="absolute inset-0" style={{
+                      backgroundImage: `linear-gradient(#059669 1px, transparent 1px), linear-gradient(90deg, #059669 1px, transparent 1px)`,
+                      backgroundSize: '20px 20px',
+                      opacity: 0.2
+                    }}></div>
+                  )}
+
+                  <div className="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2">
+                    <div className="transition-all duration-500 group-hover:scale-125 group-hover:rotate-12">
+                      <role.icon className="w-16 h-16 text-emerald-700" strokeWidth={1.5} />
+                    </div>
+                  </div>
+                </div>
+
+                <div className="p-8 relative">
+                  <div className="text-center mb-6">
+                    <h3 className="text-3xl font-black mb-2 tracking-tight text-emerald-700" 
+                        style={{ fontFamily: "'Georgia', serif" }}>
+                      {role.title}
+                    </h3>
+                    <p className="text-slate-600 font-medium text-base">
+                      {role.description}
+                    </p>
+                  </div>
+
+                  <button className={`w-full py-4 rounded-2xl font-bold text-lg tracking-wide transition-all duration-300 relative overflow-hidden bg-gradient-to-r ${role.gradient} hover:${role.hoverGradient} text-white shadow-lg ${role.shadowColor}`}>
+                    <span className="relative z-10 flex items-center justify-center gap-3">
+                      <span>Giriş Yap</span>
+                      <svg className="w-5 h-5 group-hover:translate-x-2 transition-transform" 
+                           fill="none" 
+                           stroke="currentColor" 
+                           viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M13 7l5 5m0 0l-5 5m5-5H6"/>
+                      </svg>
+                    </span>
+                    <div className="absolute inset-0 bg-white/20 translate-y-full group-hover:translate-y-0 transition-transform"></div>
+                  </button>
+                </div>
+
+                {selectedRole === role.id && (
+                  <div className="absolute top-4 right-4 animate-bounce">
+                    <div className="w-10 h-10 bg-emerald-500 rounded-full flex items-center justify-center shadow-lg">
+                      <svg className="w-6 h-6 text-white" fill="currentColor" viewBox="0 0 20 20">
+                        <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd"/>
+                      </svg>
+                    </div>
+                  </div>
+                )}
+              </div>
+
+              <div className="absolute -bottom-4 left-1/2 transform -translate-x-1/2 w-3/4 h-4 bg-emerald-200 blur-xl opacity-50 rounded-full"></div>
+            </div>
+          ))}
         </div>
 
-        {/* ALT BİLGİ */}
-        <div className="text-center mt-10 opacity-80">
-          <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-white/70 border border-slate-200 shadow-sm">
+        {error && (
+          <div className="flex items-center justify-center gap-3 p-4 bg-red-50 border-2 border-red-200 rounded-2xl animate-shake max-w-md mx-auto mb-8">
+            <svg
+              className="w-5 h-5 text-red-500 flex-shrink-0"
+              fill="currentColor"
+              viewBox="0 0 20 20"
+            >
+              <path
+                fillRule="evenodd"
+                d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z"
+                clipRule="evenodd"
+              />
+            </svg>
+            <p className="text-sm text-red-700 font-semibold">{error}</p>
+          </div>
+        )}
+
+        <div className="text-center opacity-80">
+          <div className="inline-flex items-center gap-2 px-5 py-3 rounded-full bg-white/70 border border-slate-200 shadow-sm backdrop-blur-sm">
             <span className="text-xs text-slate-500 font-medium">
               Made by
             </span>
-
             <span className="text-sm font-bold text-slate-700">
               Selim Kavaklıçeşme
             </span>
-
             <span className="text-slate-300">•</span>
-
             <a
               href="tel:+905516021021"
               className="text-sm font-bold text-emerald-600 hover:text-emerald-700 transition"

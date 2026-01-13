@@ -7,9 +7,8 @@ export default function YagciPanel() {
   const [liste, setListe] = useState([])
   const [loadingListe, setLoadingListe] = useState(false)
   const [listeHata, setListeHata] = useState("")
-
   const [secili, setSecili] = useState(null)
-
+  const [showInfo, setShowInfo] = useState(false)
   const [formData, setFormData] = useState({
     zeytin_kg: "",
     cikan_yag: "",
@@ -74,24 +73,36 @@ export default function YagciPanel() {
   }
 
   const hesap = useMemo(() => {
-    const yag = parseFloat(formData.cikan_yag) || 0
+    const kantarYag = parseFloat(formData.cikan_yag) || 0
     const oran = parseFloat(formData.hak_oran) || 0
     const fiyat = parseFloat(formData.yag_fiyati) || 0
-    const hakKGraw = (yag * oran) / 100
+    const tahminiBidon = kantarYag > 0 ? Math.ceil(kantarYag / 50) : 0
+    const dara = tahminiBidon * 2
+
+    let netYag = kantarYag - dara
+    if (netYag < 0) netYag = 0
+
+    const hakKGraw = (netYag * oran) / 100
     const hakKGround = yuvarlaHakKG(hakKGraw)
-    const paraTL = (hakKGraw * fiyat).toFixed(2)
+    
+    const paraTL = (hakKGraw * fiyat).toFixed(2) 
     const yagTL = (hakKGround * fiyat).toFixed(2) 
 
-    return { hakKGraw, hakKGround, paraTL, yagTL }
+    return { hakKGraw, hakKGround, paraTL, yagTL, netYag }
   }, [formData.cikan_yag, formData.hak_oran, formData.yag_fiyati])
-
 
   useEffect(() => {
     const zeytin = parseFloat(formData.zeytin_kg) || 0
-    const yag = parseFloat(formData.cikan_yag) || 0
-    const oran = parseFloat(formData.hak_oran) || 0
+    const kantarYag = parseFloat(formData.cikan_yag) || 0 
+    const oran = parseFloat(formData.hak_oran) || 0 
     const fiyat = parseFloat(formData.yag_fiyati) || 0
-    const hakKGraw = (yag * oran) / 100
+    const tahminiBidonSayisi = kantarYag > 0 ? Math.ceil(kantarYag / 50) : 0
+    const toplamDara = tahminiBidonSayisi * 2 
+
+    let netYag = kantarYag - toplamDara
+    if (netYag < 0) netYag = 0
+
+    const hakKGraw = (netYag * oran) / 100
     const hakKGround = yuvarlaHakKG(hakKGraw)
     const paraTL = (hakKGraw * fiyat).toFixed(2)
     const yagTL = (hakKGround * fiyat).toFixed(2)
@@ -105,26 +116,21 @@ export default function YagciPanel() {
       ) {
         return prev
       }
-
       return { ...prev, firma_hakki: hakKGround, firma_hakki_tl: nextTL }
     })
 
-    const musteriKalanYag =
-      formData.odeme_tipi === "yag" ? yag - hakKGround : yag
-
-    const b52 = musteriKalanYag > 0 ? musteriKalanYag / 52 : 0
-    const b50 = musteriKalanYag > 0 ? musteriKalanYag / 50 : 0
-    const verilecekBidon = musteriKalanYag > 0 ? Math.ceil(musteriKalanYag / 52) : 0
-
-    const randimanHesap = zeytin > 0 && yag > 0 ? zeytin / yag : 0
+    const musteriKalanYag = formData.odeme_tipi === "yag" ? netYag - hakKGround : netYag
+    const verilecekBidon = musteriKalanYag > 0 ? Math.ceil(musteriKalanYag / 50) : 0
+    const randimanHesap = zeytin > 0 && kantarYag > 0 ? zeytin / kantarYag : 0
 
     setHesapSonuc({
       kalanYag: musteriKalanYag.toFixed(1),
-      bidon52: b52.toFixed(2),
-      bidon50: b50.toFixed(2),
+      bidon52: "0", 
+      bidon50: "0",
       verilecekBidon,
       randiman: randimanHesap.toFixed(1),
     })
+
   }, [
     formData.cikan_yag,
     formData.zeytin_kg,
@@ -189,7 +195,6 @@ export default function YagciPanel() {
     const s = String(str || "").trim()
     if (!s) return 0
 
-    
     const parts = s
     .replace(/[,\s]+/g, "-")
     .split("-")
@@ -215,7 +220,6 @@ export default function YagciPanel() {
   
   return (
     <div className="min-h-screen bg-gradient-to-br from-emerald-50 via-white to-amber-50 p-6 relative overflow-hidden">
-      {/* ARKA PLAN PATTERN */}
       <div className="absolute inset-0 opacity-[0.03] pointer-events-none">
         <div
           className="absolute inset-0"
@@ -226,12 +230,10 @@ export default function YagciPanel() {
         ></div>
       </div>
 
-      {/* GLOW */}
       <div className="absolute top-20 right-1/4 w-96 h-96 bg-emerald-200/30 rounded-full blur-3xl animate-pulse pointer-events-none"></div>
       <div className="absolute bottom-40 left-1/3 w-72 h-72 bg-amber-200/30 rounded-full blur-3xl animate-pulse delay-1000 pointer-events-none"></div>
 
       <div className="max-w-7xl mx-auto relative z-10">
-        {/* HEADER */}
         <div className="text-center mb-8">
           <h1 className="text-4xl font-black text-transparent bg-clip-text bg-gradient-to-r from-emerald-600 via-emerald-700 to-emerald-800 mb-2 tracking-tight">
             Yağcı İşlem Paneli
@@ -241,7 +243,6 @@ export default function YagciPanel() {
           </p>
         </div>
 
-        {/* ÜST KISIM */}
         {(hata || mesaj) && (
           <div className="mb-6">
             {hata && (
@@ -284,7 +285,6 @@ export default function YagciPanel() {
         )}
 
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-          {/* SOL: BEKLEYENLER */}
           <div className="bg-white/80 backdrop-blur-xl rounded-3xl shadow-2xl border border-white/60 p-6 lg:col-span-1 relative overflow-hidden">
             <div className="absolute inset-0 bg-gradient-to-br from-emerald-50/50 to-transparent pointer-events-none"></div>
 
@@ -299,7 +299,6 @@ export default function YagciPanel() {
                 </button>
               </div>
 
-              {/* MÜŞTERİ NO İLE ARAMA */}
               <div className="mb-4">
                 <label className="block text-xs font-bold text-slate-600 uppercase tracking-wider mb-2">
                   Müşteri No İle Ara
@@ -389,7 +388,6 @@ export default function YagciPanel() {
             </div>
           </div>
 
-          {/* SAĞ: FORM */}
           <div className="lg:col-span-2">
             {!secili ? (
               <div className="bg-white/80 backdrop-blur-xl rounded-3xl shadow-2xl border border-white/60 p-16 text-center relative overflow-hidden">
@@ -405,7 +403,6 @@ export default function YagciPanel() {
                 <div className="absolute inset-0 bg-gradient-to-br from-emerald-50/30 to-amber-50/30 pointer-events-none"></div>
 
                 <div className="relative z-10 space-y-6">
-                  {/* MÜŞTERİ BİLGİSİ */}
                   <div className="bg-gradient-to-br from-slate-50 to-slate-100/50 rounded-2xl p-6 border-2 border-slate-200 shadow-sm">
                     <div className="flex items-center justify-between">
                       <div>
@@ -432,8 +429,7 @@ export default function YagciPanel() {
                     </div>
                   </div>
 
-                  {/* ZEYTİN VE YAĞ */}
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4 items-end">
                     <div>
                       <label className="block text-sm font-bold text-slate-700 mb-2">
                         Gelen Zeytin (KG)
@@ -449,9 +445,32 @@ export default function YagciPanel() {
                     </div>
 
                     <div>
-                      <label className="block text-sm font-bold text-slate-700 mb-2">
-                        Çıkan Yağ (KG)
-                      </label>
+                      <div className="flex items-center justify-between mb-2">
+                        <label className="block text-sm font-bold text-slate-700">
+                          Kantarda Gözüken Yağ (KG)
+                        </label>
+                        <button
+                          type="button"
+                          onClick={() => setShowInfo(true)}
+                          className="text-emerald-600 hover:text-emerald-800 transition-colors flex items-center gap-1 text-xs font-bold bg-emerald-50 px-2 py-1 rounded-lg border border-emerald-100 hover:border-emerald-200"
+                          title="Hesaplama Detayını Gör"
+                        >
+                          <svg
+                            xmlns="http://www.w3.org/2000/svg"
+                            viewBox="0 0 24 24"
+                            fill="currentColor"
+                            className="w-4 h-4"
+                          >
+                            <path
+                              fillRule="evenodd"
+                              d="M2.25 12c0-5.385 4.365-9.75 9.75-9.75s9.75 4.365 9.75 9.75-4.365 9.75-9.75 9.75S2.25 17.385 2.25 12zm8.706-1.442c1.146-.573 2.437.463 2.126 1.706l-.709 2.836.042-.02a.75.75 0 01.67 1.34l-.04.022c-1.147.573-2.438-.463-2.127-1.706l.71-2.836-.042.02a.75.75 0 01-.671-1.34l.041-.022zM12 9a.75.75 0 100-1.5.75.75 0 000 1.5z"
+                              clipRule="evenodd"
+                            />
+                          </svg>
+                          Nasıl Hesaplanıyor?
+                        </button>
+                      </div>
+
                       <input
                         type="number"
                         name="cikan_yag"
@@ -463,7 +482,6 @@ export default function YagciPanel() {
                     </div>
                   </div>
 
-                  {/* ORAN VE FİYAT */}
                   <div className="grid grid-cols-2 gap-4">
                     <div>
                       <label className="block text-sm font-bold text-slate-700 mb-2">
@@ -491,7 +509,6 @@ export default function YagciPanel() {
                     </div>
                   </div>
 
-                  {/* ÖDEME TİPİ */}
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                     <button
                       type="button"
@@ -542,7 +559,6 @@ export default function YagciPanel() {
                     </button>
                   </div>
 
-                  {/* SONUÇ */}
                   <div className="p-8 bg-gradient-to-br from-white to-slate-50 border-2 border-slate-200 rounded-3xl shadow-2xl relative overflow-hidden">
                     <div className="absolute top-0 right-0 w-32 h-32 bg-emerald-100 rounded-full blur-3xl opacity-30"></div>
                     <div className="absolute bottom-0 left-0 w-32 h-32 bg-amber-100 rounded-full blur-3xl opacity-30"></div>
@@ -583,7 +599,6 @@ export default function YagciPanel() {
                     </div>
                   </div>
 
-                  {/* BİDON NO */}
                   <div>
                     <label className="block text-sm font-bold text-slate-700 mb-2">
                       Verilen Bidon Numaraları
@@ -597,7 +612,7 @@ export default function YagciPanel() {
                       onFocus={autoGrowBidon}
                       onInput={autoGrowBidon}
                       onKeyDown={(e) => {
-                        if (e.key === " ") {
+                        if (e.key === " " || e.key === "Enter") {
                           e.preventDefault()
                           setFormData((prev) => {
                             const v = prev.bidon_no || ""
@@ -636,7 +651,6 @@ export default function YagciPanel() {
                     </span>
                   </div>
 
-                  {/* NOTLAR */}
                   <div>
                     <label className="block text-sm font-bold text-slate-700 mb-2">
                       İşlem Notları
@@ -651,7 +665,6 @@ export default function YagciPanel() {
                     />
                   </div>
 
-                  {/* ONAYLA */}
                   <div className="flex gap-4 pt-4">
                     <button
                       onClick={() => setSecili(null)}
@@ -686,6 +699,88 @@ export default function YagciPanel() {
           </div>
         </div>
       </div>
+            {showInfo && (
+              <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+                <div
+                  className="absolute inset-0 bg-slate-900/40 backdrop-blur-sm transition-opacity"
+                  onClick={() => setShowInfo(false)}
+                ></div>
+                
+                <div className="bg-white rounded-3xl shadow-2xl w-full max-w-lg relative z-10 overflow-hidden animate-fadeInUp">
+                  <div className="bg-gradient-to-r from-emerald-500 to-emerald-600 p-6 flex items-center justify-between">
+                    <h3 className="text-xl font-bold text-white flex items-center gap-2">
+                      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" className="w-6 h-6">
+                        <path fillRule="evenodd" d="M2.25 12c0-5.385 4.365-9.75 9.75-9.75s9.75 4.365 9.75 9.75-4.365 9.75-9.75 9.75S2.25 17.385 2.25 12zm8.706-1.442c1.146-.573 2.437.463 2.126 1.706l-.709 2.836.042-.02a.75.75 0 01.67 1.34l-.04.022c-1.147.573-2.438-.463-2.127-1.706l.71-2.836-.042.02a.75.75 0 01-.671-1.34l.041-.022zM12 9a.75.75 0 100-1.5.75.75 0 000 1.5z" clipRule="evenodd" />
+                      </svg>
+                      Yağ Hesaplama Mantığı
+                    </h3>
+                    <button
+                      onClick={() => setShowInfo(false)}
+                      className="text-white/80 hover:text-white bg-white/10 hover:bg-white/20 p-2 rounded-full transition"
+                    >
+                      <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={2.5} stroke="currentColor" className="w-5 h-5">
+                        <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
+                      </svg>
+                    </button>
+                  </div>
+
+                  <div className="p-6 space-y-4">
+                    <div className="flex items-start gap-4">
+                      <div className="w-8 h-8 rounded-full bg-emerald-100 flex items-center justify-center text-emerald-700 font-bold shrink-0">1</div>
+                      <div>
+                        <h4 className="font-bold text-slate-800">Kantar (Brüt) Yağ</h4>
+                        <p className="text-sm text-slate-500">Kantarın gösterdiği toplam yağ miktarı girilir.</p>
+                      </div>
+                    </div>
+
+                    <div className="flex items-start gap-4">
+                      <div className="w-8 h-8 rounded-full bg-amber-100 flex items-center justify-center text-amber-700 font-bold shrink-0">2</div>
+                      <div>
+                        <h4 className="font-bold text-slate-800">Dara Düşümü</h4>
+                        <p className="text-sm text-slate-500">
+                          Girilen yağ 50'ye bölünerek bidon sayısı bulunur. Her bidon için <span className="font-bold text-slate-700">2 KG</span> dara düşülür.
+                        </p>
+                        <div className="mt-2 bg-slate-50 p-3 rounded-xl border border-slate-200 text-xs text-slate-600 font-mono">
+                          (Yağ / 50) = Bidon Sayısı<br/>
+                          Dara = Bidon Sayısı x 2
+                        </div>
+                      </div>
+                    </div>
+
+                    <div className="flex items-start gap-4">
+                      <div className="w-8 h-8 rounded-full bg-blue-100 flex items-center justify-center text-blue-700 font-bold shrink-0">3</div>
+                      <div>
+                        <h4 className="font-bold text-slate-800">Net Yağ</h4>
+                        <p className="text-sm text-slate-500">
+                          Kantar yağından toplam dara çıkarılarak <span className="font-bold text-emerald-600">NET YAĞ</span> bulunur. Tüm hak hesaplamaları bu net miktar üzerinden yapılır.
+                        </p>
+                      </div>
+                    </div>
+
+                    <div className="flex items-start gap-4">
+                      <div className="w-8 h-8 rounded-full bg-purple-100 flex items-center justify-center text-purple-700 font-bold shrink-0">4</div>
+                      <div>
+                        <h4 className="font-bold text-slate-800">Hak Kesintisi</h4>
+                        <p className="text-sm text-slate-500">
+                          Net yağ üzerinden yüzde hesaplanır ve çıkan sonuç aşağı/yukarı yuvarlanarak (örn: 15.4k 🡺 15kg) kesinti yapılır.
+                        </p>
+                      </div>
+                    </div>
+
+                  </div>
+
+                  <div className="p-6 bg-slate-50 border-t border-slate-100 text-center">
+                    <button
+                      onClick={() => setShowInfo(false)}
+                      className="w-full py-3 bg-white border-2 border-slate-200 hover:border-slate-300 text-slate-700 font-bold rounded-xl transition shadow-sm"
+                    >
+                      Kapat
+                    </button>
+                  </div>
+                </div>
+              </div>
+            )}
+
     </div>
   )
 }
