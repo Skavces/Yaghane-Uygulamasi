@@ -52,13 +52,13 @@ cd Yaghane-Uygulamasi
 
 Navigate to the backend directory, install dependencies, and start the server.
 ```bash
-cd backend
+cd server
 npm install
 node server.js
 ```
 ### 3. Frontend Setup
 ```bash
-cd frontend
+cd client
 npm install
 npm run dev
 ```
