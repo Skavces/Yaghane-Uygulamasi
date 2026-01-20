@@ -17,6 +17,7 @@ export default function GirisciPanel() {
   const [kayitlar, setKayitlar] = useState([])
   const [mesaj, setMesaj] = useState("")
   const [mesajTipi, setMesajTipi] = useState("")
+  const [musteriNoAra, setMusteriNoAra] = useState("")
 
   useEffect(() => {
     fetchKayitlar()
@@ -141,11 +142,10 @@ export default function GirisciPanel() {
           <div className="flex">
             <button
               onClick={() => setActiveTab("form")}
-              className={`flex-1 py-5 px-6 font-bold text-sm transition relative ${
-                activeTab === "form"
-                  ? "text-slate-800 bg-white"
-                  : "text-slate-500 bg-gradient-to-b from-slate-50 to-slate-100 hover:from-slate-100 hover:to-slate-50"
-              }`}
+              className={`flex-1 py-5 px-6 font-bold text-sm transition relative ${activeTab === "form"
+                ? "text-slate-800 bg-white"
+                : "text-slate-500 bg-gradient-to-b from-slate-50 to-slate-100 hover:from-slate-100 hover:to-slate-50"
+                }`}
             >
               {activeTab === "form" && (
                 <div className="absolute bottom-0 left-0 right-0 h-1 bg-gradient-to-r from-emerald-500 to-emerald-600"></div>
@@ -165,11 +165,10 @@ export default function GirisciPanel() {
 
             <button
               onClick={() => setActiveTab("liste")}
-              className={`flex-1 py-5 px-6 font-bold text-sm transition relative ${
-                activeTab === "liste"
-                  ? "text-slate-800 bg-white"
-                  : "text-slate-500 bg-gradient-to-b from-slate-50 to-slate-100 hover:from-slate-100 hover:to-slate-50"
-              }`}
+              className={`flex-1 py-5 px-6 font-bold text-sm transition relative ${activeTab === "liste"
+                ? "text-slate-800 bg-white"
+                : "text-slate-500 bg-gradient-to-b from-slate-50 to-slate-100 hover:from-slate-100 hover:to-slate-50"
+                }`}
             >
               {activeTab === "liste" && (
                 <div className="absolute bottom-0 left-0 right-0 h-1 bg-gradient-to-r from-emerald-500 to-emerald-600"></div>
@@ -200,11 +199,10 @@ export default function GirisciPanel() {
           <div className="relative z-10">
             {mesaj && (
               <div
-                className={`mb-6 flex items-center justify-center gap-3 p-5 rounded-2xl shadow-lg border-2 ${
-                  mesajTipi === "error"
-                    ? "bg-red-50 border-red-300 text-red-700"
-                    : "bg-gradient-to-r from-emerald-50 to-emerald-100 border-emerald-300 text-emerald-700"
-                }`}
+                className={`mb-6 flex items-center justify-center gap-3 p-5 rounded-2xl shadow-lg border-2 ${mesajTipi === "error"
+                  ? "bg-red-50 border-red-300 text-red-700"
+                  : "bg-gradient-to-r from-emerald-50 to-emerald-100 border-emerald-300 text-emerald-700"
+                  }`}
               >
                 <span className="text-2xl">{mesajTipi === "error" ? "❌" : "✅"}</span>
                 <p className="font-bold text-lg">{mesaj}</p>
@@ -292,11 +290,10 @@ export default function GirisciPanel() {
                         onClick={() =>
                           setFormData((p) => ({ ...p, giris_durum: "sikilacak" }))
                         }
-                        className={`px-4 py-4 rounded-2xl border-2 font-black transition shadow-sm ${
-                          formData.giris_durum === "sikilacak"
-                            ? "border-emerald-500 bg-emerald-50 text-emerald-700"
-                            : "border-slate-200 bg-white text-slate-600 hover:bg-slate-50"
-                        }`}
+                        className={`px-4 py-4 rounded-2xl border-2 font-black transition shadow-sm ${formData.giris_durum === "sikilacak"
+                          ? "border-emerald-500 bg-emerald-50 text-emerald-700"
+                          : "border-slate-200 bg-white text-slate-600 hover:bg-slate-50"
+                          }`}
                       >
                         Sıkılacak
                         <div className="text-xs font-bold opacity-70 mt-1">
@@ -309,11 +306,10 @@ export default function GirisciPanel() {
                         onClick={() =>
                           setFormData((p) => ({ ...p, giris_durum: "bekleyecek" }))
                         }
-                        className={`px-4 py-4 rounded-2xl border-2 font-black transition shadow-sm ${
-                          formData.giris_durum === "bekleyecek"
-                            ? "border-indigo-500 bg-indigo-50 text-indigo-700"
-                            : "border-slate-200 bg-white text-slate-600 hover:bg-slate-50"
-                        }`}
+                        className={`px-4 py-4 rounded-2xl border-2 font-black transition shadow-sm ${formData.giris_durum === "bekleyecek"
+                          ? "border-indigo-500 bg-indigo-50 text-indigo-700"
+                          : "border-slate-200 bg-white text-slate-600 hover:bg-slate-50"
+                          }`}
                       >
                         Bekleyecek
                         <div className="text-xs font-bold opacity-70 mt-1">
@@ -355,20 +351,44 @@ export default function GirisciPanel() {
                       Bekleyecek / Sırada / Çıkışta müşteriler
                     </p>
                   </div>
-                  <button
-                    onClick={fetchKayitlar}
-                    className="flex items-center gap-2 px-4 py-3 text-sm font-bold text-emerald-700 bg-gradient-to-r from-emerald-50 to-emerald-100 hover:from-emerald-100 hover:to-emerald-50 rounded-xl transition-all shadow-sm hover:shadow-md border border-emerald-200"
-                  >
-                    <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path
-                        strokeLinecap="round"
-                        strokeLinejoin="round"
-                        strokeWidth={2}
-                        d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"
+                  <div className="flex items-center gap-3">
+                    <div className="relative">
+                      <input
+                        value={musteriNoAra}
+                        onChange={(e) => {
+                          const val = e.target.value.replace(/\D/g, "").slice(0, 3)
+                          setMusteriNoAra(val)
+                        }}
+                        inputMode="numeric"
+                        placeholder="Müşteri No"
+                        className="w-40 px-4 py-3 bg-white border-2 border-slate-200 rounded-xl text-sm font-bold text-slate-800 focus:outline-none focus:border-emerald-400 transition-all pr-10 shadow-sm hover:shadow-md"
                       />
-                    </svg>
-                    Yenile
-                  </button>
+                      {musteriNoAra && (
+                        <button
+                          onClick={() => setMusteriNoAra("")}
+                          className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-700 font-bold"
+                          type="button"
+                          aria-label="Temizle"
+                        >
+                          ✕
+                        </button>
+                      )}
+                    </div>
+                    <button
+                      onClick={fetchKayitlar}
+                      className="flex items-center gap-2 px-4 py-3 text-sm font-bold text-emerald-700 bg-gradient-to-r from-emerald-50 to-emerald-100 hover:from-emerald-100 hover:to-emerald-50 rounded-xl transition-all shadow-sm hover:shadow-md border border-emerald-200"
+                    >
+                      <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path
+                          strokeLinecap="round"
+                          strokeLinejoin="round"
+                          strokeWidth={2}
+                          d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"
+                        />
+                      </svg>
+                      Yenile
+                    </button>
+                  </div>
                 </div>
 
                 {kayitlar.length === 0 ? (
@@ -394,10 +414,10 @@ export default function GirisciPanel() {
                           <th className="px-6 py-4 text-left text-xs font-bold text-slate-600 uppercase tracking-wider">
                             Müşteri No
                           </th>
-                          <th className="px-6 py-4 text-left text-xs font-bold text-slate-600 uppercase tracking-wider">
+                          <th className="px-6 py-4 text-left text-xm font-bold text-slate-600 uppercase tracking-wider">
                             İsim / Telefon
                           </th>
-                          <th className="px-6 py-4 text-left text-xs font-bold text-slate-600 uppercase tracking-wider">
+                          <th className="px-6 py-4 text-left text-xm font-bold text-slate-600 uppercase tracking-wider">
                             Giriş Saati
                           </th>
                           <th className="px-6 py-4 text-center text-xs font-bold text-slate-600 uppercase tracking-wider">
@@ -410,91 +430,96 @@ export default function GirisciPanel() {
                       </thead>
 
                       <tbody className="bg-white divide-y-2 divide-slate-100">
-                        {kayitlar.map((kayit) => {
-                          const { saat, tarih } = formatTarihSaat(kayit.created_at)
+                        {kayitlar
+                          .filter((kayit) => {
+                            if (!musteriNoAra) return true
+                            return String(kayit.musteri_no).startsWith(musteriNoAra)
+                          })
+                          .map((kayit) => {
+                            const { saat, tarih } = formatTarihSaat(kayit.created_at)
 
-                          const isBekleyecek = kayit.status === 0
-                          const isSirada = kayit.status === 1
-                          const isCikista = kayit.status === 2
+                            const isBekleyecek = kayit.status === 0
+                            const isSirada = kayit.status === 1
+                            const isCikista = kayit.status === 2
 
-                          const statusText = isBekleyecek
-                            ? "Bekleyecek"
-                            : isSirada
-                            ? "Sırada"
-                            : "Çıkışta"
+                            const statusText = isBekleyecek
+                              ? "Bekleyecek"
+                              : isSirada
+                                ? "Sırada"
+                                : "Çıkışta"
 
-                          const statusColor = isBekleyecek
-                            ? "bg-gradient-to-r from-indigo-100 to-indigo-200 text-indigo-800 border-indigo-300"
-                            : isSirada
-                            ? "bg-gradient-to-r from-amber-100 to-amber-200 text-amber-800 border-amber-300"
-                            : "bg-gradient-to-r from-orange-100 to-orange-200 text-orange-800 border-orange-300"
+                            const statusColor = isBekleyecek
+                              ? "bg-gradient-to-r from-indigo-100 to-indigo-200 text-indigo-800 border-indigo-300"
+                              : isSirada
+                                ? "bg-gradient-to-r from-amber-100 to-amber-200 text-amber-800 border-amber-300"
+                                : "bg-gradient-to-r from-orange-100 to-orange-200 text-orange-800 border-orange-300"
 
-                          return (
-                            <tr key={kayit.id} className="hover:bg-slate-50 transition duration-150">
-                              <td className="px-6 py-4">
-                                <span className="text-xl font-black text-slate-800 tracking-wide bg-slate-100 px-3 py-1 rounded-xl border border-slate-200">
-                                  #{kayit.musteri_no}
-                                </span>
-                              </td>
-
-                              <td className="px-6 py-4">
-                                <div className="flex flex-col">
-                                  <span className="text-base font-bold text-slate-700">
-                                    {kayit.ad_soyad}
+                            return (
+                              <tr key={kayit.id} className="hover:bg-slate-50 transition duration-150">
+                                <td className="px-6 py-4">
+                                  <span className="text-xl font-black text-slate-800 tracking-wide bg-slate-100 px-3 py-1 rounded-xl border border-slate-200">
+                                    #{kayit.musteri_no}
                                   </span>
-                                  <span className="text-xs text-slate-400 font-mono mt-0.5">
-                                    {kayit.telefon ? formatTelefonTR(kayit.telefon) : "-"}
-                                  </span>
-                                </div>
-                              </td>
+                                </td>
 
-                              <td className="px-6 py-4">
-                                <div className="flex flex-col">
-                                  <span className="text-sm font-bold text-slate-800 flex items-center gap-1">
-                                    <svg className="w-4 h-4 text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                      <path
-                                        strokeLinecap="round"
-                                        strokeLinejoin="round"
-                                        strokeWidth={2}
-                                        d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"
-                                      />
-                                    </svg>
-                                    {saat}
-                                  </span>
-                                  <span className="text-xs text-slate-400 pl-5">{tarih}</span>
-                                </div>
-                              </td>
+                                <td className="px-6 py-4">
+                                  <div className="flex flex-col">
+                                    <span className="text-lg font-bold text-slate-700">
+                                      {kayit.ad_soyad}
+                                    </span>
+                                    <span className="text-lg font-bold text-slate-500 mt-0.5">
+                                      {kayit.telefon ? formatTelefonTR(kayit.telefon) : "-"}
+                                    </span>
+                                  </div>
+                                </td>
 
-                              <td className="px-6 py-4 text-center">
-                                <span
-                                  className={`inline-flex items-center px-4 py-1.5 border-2 rounded-full text-xs font-black uppercase tracking-wide shadow-md ${statusColor}`}
-                                >
-                                  {isBekleyecek ? (
-                                    <span className="w-2 h-2 rounded-full bg-indigo-500 mr-2 shadow-lg"></span>
-                                  ) : isSirada ? (
-                                    <span className="w-2 h-2 rounded-full bg-amber-500 mr-2 animate-pulse shadow-lg"></span>
-                                  ) : (
-                                    <span className="w-2 h-2 rounded-full bg-orange-500 mr-2 shadow-lg"></span>
-                                  )}
-                                  {statusText}
-                                </span>
-                              </td>
+                                <td className="px-6 py-4">
+                                  <div className="flex flex-col">
+                                    <span className="text-base font-bold text-slate-800 flex items-center gap-1">
+                                      <svg className="w-4 h-4 text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path
+                                          strokeLinecap="round"
+                                          strokeLinejoin="round"
+                                          strokeWidth={2}
+                                          d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"
+                                        />
+                                      </svg>
+                                      {saat}
+                                    </span>
+                                    <span className="text-sm font-bold text-slate-500 pl-5">{tarih}</span>
+                                  </div>
+                                </td>
 
-                              <td className="px-6 py-4 text-center">
-                                {isBekleyecek ? (
-                                  <button
-                                    onClick={() => bekleyecekToSikilacak(kayit.id)}
-                                    className="px-4 py-2 rounded-xl font-black text-xs bg-gradient-to-r from-emerald-500 to-emerald-600 text-white shadow-md hover:scale-[1.02] active:scale-[0.98] transition"
+                                <td className="px-6 py-4 text-center">
+                                  <span
+                                    className={`inline-flex items-center px-4 py-1.5 border-2 rounded-full text-xs font-black uppercase tracking-wide shadow-md ${statusColor}`}
                                   >
-                                    SIKILACAK YAP
-                                  </button>
-                                ) : (
-                                  <span className="text-xs font-bold text-slate-400">-</span>
-                                )}
-                              </td>
-                            </tr>
-                          )
-                        })}
+                                    {isBekleyecek ? (
+                                      <span className="w-2 h-2 rounded-full bg-indigo-500 mr-2 shadow-lg"></span>
+                                    ) : isSirada ? (
+                                      <span className="w-2 h-2 rounded-full bg-amber-500 mr-2 animate-pulse shadow-lg"></span>
+                                    ) : (
+                                      <span className="w-2 h-2 rounded-full bg-orange-500 mr-2 shadow-lg"></span>
+                                    )}
+                                    {statusText}
+                                  </span>
+                                </td>
+
+                                <td className="px-6 py-4 text-center">
+                                  {isBekleyecek ? (
+                                    <button
+                                      onClick={() => bekleyecekToSikilacak(kayit.id)}
+                                      className="px-4 py-2 rounded-xl font-black text-xs bg-gradient-to-r from-emerald-500 to-emerald-600 text-white shadow-md hover:scale-[1.02] active:scale-[0.98] transition"
+                                    >
+                                      SIKILACAK YAP
+                                    </button>
+                                  ) : (
+                                    <span className="text-xs font-bold text-slate-400">-</span>
+                                  )}
+                                </td>
+                              </tr>
+                            )
+                          })}
                       </tbody>
                     </table>
                   </div>

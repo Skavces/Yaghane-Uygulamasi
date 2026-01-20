@@ -15,7 +15,7 @@ export default function CikisciPanel() {
   const [bekleyenMusteriAra, setBekleyenMusteriAra] = useState("")
   const [gecmisTelefonAra, setGecmisTelefonAra] = useState("")
   const [satisModalAcik, setSatisModalAcik] = useState(false)
-  const [isEditing, setIsEditing] = useState(false) 
+  const [isEditing, setIsEditing] = useState(false)
   const [bidonEdit, setBidonEdit] = useState("")
   const [bidonSaving, setBidonSaving] = useState(false)
   const textareaRef = useRef(null);
@@ -293,6 +293,30 @@ export default function CikisciPanel() {
   const hazir = useMemo(() => {
     if (!seciliIslem) return null
     return verileriHazirla(seciliIslem)
+  }, [seciliIslem])
+
+  const hesapDetay = useMemo(() => {
+    if (!seciliIslem) return { hakKGround: 0, paraTL: "0.00" }
+
+    const kantarYag = parseFloat(seciliIslem.cikan_yag) || 0
+    const oran = parseFloat(seciliIslem.hak_oran) || 0
+    const fiyat = parseFloat(seciliIslem.yag_fiyati) || 0
+
+    const tahminiBidon = kantarYag > 0 ? Math.ceil(kantarYag / 50) : 0
+    const dara = tahminiBidon * 2
+
+    let netYag = kantarYag - dara
+    if (netYag < 0) netYag = 0
+
+    const hakKGraw = (netYag * oran) / 100
+
+    const alt = Math.floor(hakKGraw)
+    const ondalik = hakKGraw - alt
+    const hakKGround = ondalik <= 0.5 ? alt : alt + 1
+
+    const paraTL = (hakKGraw * fiyat).toFixed(2)
+
+    return { hakKGround, paraTL }
   }, [seciliIslem])
 
   const bidonOzetAyniTelefon = useMemo(() => {
@@ -657,9 +681,8 @@ export default function CikisciPanel() {
                 setSeciliIslem(null)
                 setBekleyenMusteriAra("")
               }}
-              className={`flex-1 py-3 text-sm font-bold rounded-xl transition-all ${
-                aktifTab === "bekleyen" ? "bg-white text-slate-800 shadow-md" : "text-slate-400 hover:text-slate-600"
-              }`}
+              className={`flex-1 py-3 text-sm font-bold rounded-xl transition-all ${aktifTab === "bekleyen" ? "bg-white text-slate-800 shadow-md" : "text-slate-400 hover:text-slate-600"
+                }`}
             >
               Bekleyen ({tumListe.filter((i) => i.status === 2).length})
             </button>
@@ -670,9 +693,8 @@ export default function CikisciPanel() {
                 setGecmisTelefonAra("")
                 setBekleyenMusteriAra("")
               }}
-              className={`flex-1 py-3 text-sm font-bold rounded-xl transition-all ${
-                aktifTab === "gecmis" ? "bg-white text-slate-800 shadow-md" : "text-slate-400 hover:text-slate-600"
-              }`}
+              className={`flex-1 py-3 text-sm font-bold rounded-xl transition-all ${aktifTab === "gecmis" ? "bg-white text-slate-800 shadow-md" : "text-slate-400 hover:text-slate-600"
+                }`}
             >
               Geçmiş
             </button>
@@ -756,11 +778,10 @@ export default function CikisciPanel() {
               <div
                 key={islem.id}
                 onClick={() => setSeciliIslem(islem)}
-                className={`p-4 rounded-2xl cursor-pointer border-2 transition-all relative bg-white/80 backdrop-blur-sm transform hover:scale-[1.01] ${
-                  seciliIslem?.id === islem.id
-                    ? "border-amber-400 shadow-xl shadow-amber-500/20"
-                    : "border-slate-200 hover:border-slate-300 hover:shadow-lg"
-                }`}
+                className={`p-4 rounded-2xl cursor-pointer border-2 transition-all relative bg-white/80 backdrop-blur-sm transform hover:scale-[1.01] ${seciliIslem?.id === islem.id
+                  ? "border-amber-400 shadow-xl shadow-amber-500/20"
+                  : "border-slate-200 hover:border-slate-300 hover:shadow-lg"
+                  }`}
               >
                 <div className="mb-2">
                   {islem.odeme_tipi === "SATIS" ? (
@@ -792,12 +813,12 @@ export default function CikisciPanel() {
                   <div className="flex flex-col">
                     <span className="font-bold text-[22px] text-slate-800">{islem.ad_soyad}</span>
                     <span className="text-lg font-semibold text-slate-500 mt-0.5">
-                        {normalizeTelefon(islem.telefon)}
+                      {normalizeTelefon(islem.telefon)}
                     </span>
                   </div>
 
                   {islem.musteri_no && (
-                    <span className="text-[20px] font-bold text-slate-500 bg-slate-100 px-3 py-1 rounded-xl border border-slate-200">
+                    <span className="text-[30px] font-bold text-slate-500 bg-slate-100 px-3 py-1 rounded-xl border border-slate-200">
                       #{islem.musteri_no}
                     </span>
                   )}
@@ -812,9 +833,6 @@ export default function CikisciPanel() {
                       hour: "2-digit",
                       minute: "2-digit",
                     })}
-                  </span>
-                  <span className="text-sm font-bold text-emerald-700 bg-emerald-100 px-3 py-1 rounded-xl border border-emerald-200">
-                    {islem.cikan_yag} KG
                   </span>
                 </div>
               </div>
@@ -839,16 +857,16 @@ export default function CikisciPanel() {
             <div className="max-w-4xl mx-auto space-y-6">
               <div className="bg-white/80 backdrop-blur-xl rounded-3xl p-6 border-2 border-white/60 flex justify-between items-center shadow-xl">
                 <div>
-                  <p className="text-xs font-bold text-slate-500 uppercase mb-1 tracking-wider">Müşteri Bilgisi</p>
-                  <h3 className="text-2xl font-black text-slate-800">{seciliIslem.ad_soyad}</h3>
-                  <p className="text-slate-600 font-semibold">{normalizeTelefon(seciliIslem.telefon)}</p>
+                  <p className="text-sm font-bold text-slate-500 uppercase mb-1 tracking-wider">Müşteri Bilgisi</p>
+                  <h3 className="text-3xl font-black text-slate-800">{seciliIslem.ad_soyad}</h3>
+                  <p className="text-xl text-slate-600 font-semibold">{normalizeTelefon(seciliIslem.telefon)}</p>
                 </div>
                 <div className="text-right">
-                  <p className="text-xs font-bold text-slate-500 uppercase mb-1 tracking-wider">Tarih</p>
-                  <h3 className="text-lg font-bold text-slate-700">
+                  <p className="text-sm font-bold text-slate-500 uppercase mb-1 tracking-wider">Tarih</p>
+                  <h3 className="text-2xl font-bold text-slate-700">
                     {new Date(seciliIslem.created_at).toLocaleDateString("tr-TR")}
                   </h3>
-                  <p className="text-sm font-bold text-slate-400">
+                  <p className="text-base font-bold text-slate-400">
                     {new Date(seciliIslem.created_at).toLocaleTimeString("tr-TR", { hour: "2-digit", minute: "2-digit" })}
                   </p>
                 </div>
@@ -872,30 +890,72 @@ export default function CikisciPanel() {
               ) : (
                 <>
                   <div className="grid grid-cols-2 gap-4">
-                    <div className="bg-white/80 backdrop-blur-sm p-4 rounded-2xl border-2 border-slate-200 shadow-lg">
-                      <label className="block text-sm font-bold text-slate-700 mb-1">Gelen Zeytin (KG)</label>
-                      <div className="text-lg font-black text-slate-800">{seciliIslem.zeytin_kg}</div>
+                    <div className="bg-white/80 backdrop-blur-sm p-4 rounded-2xl border-2 border-slate-200 shadow-lg text-center">
+                      <label className="block text-lg font-bold text-slate-700 mb-1">Gelen Zeytin (KG)</label>
+                      <div className="text-4xl font-black text-slate-800">{seciliIslem.zeytin_kg}</div>
                     </div>
-                    <div className="bg-gradient-to-br from-amber-50 to-amber-100/50 p-4 rounded-2xl border-2 border-amber-300 shadow-lg">
-                      <label className="block text-sm font-bold text-amber-800 mb-1">Çıkan Yağ (KG)</label>
-                      <div className="text-lg font-black text-amber-900">{seciliIslem.cikan_yag}</div>
+                    <div className="bg-gradient-to-br from-amber-50 to-amber-100/50 p-4 rounded-2xl border-2 border-amber-300 shadow-lg text-center">
+                      <label className="block text-lg font-bold text-amber-800 mb-1">Çıkan Yağ (KG)</label>
+                      <div className="text-4xl font-black text-amber-900">{seciliIslem.cikan_yag}</div>
                     </div>
                   </div>
 
                   <div className="grid grid-cols-2 gap-4">
-                    <div className="bg-white/80 backdrop-blur-sm p-4 rounded-2xl border-2 border-slate-200 shadow-lg">
-                      <label className="block text-sm font-bold text-slate-700 mb-1">Hak Oranı (%)</label>
-                      <div className="text-lg font-black text-slate-800">%{seciliIslem.hak_oran}</div>
+                    <div className="bg-white/80 backdrop-blur-sm p-4 rounded-2xl border-2 border-slate-200 shadow-lg text-center">
+                      <label className="block text-lg font-bold text-slate-700 mb-1">Hak Oranı</label>
+                      <div className="text-4xl font-black text-slate-800">%{seciliIslem.hak_oran}</div>
                     </div>
-                    <div className="bg-gradient-to-br from-emerald-50 to-emerald-100/50 p-4 rounded-2xl border-2 border-emerald-300 shadow-lg">
-                      <label className="block text-sm font-bold text-emerald-800 mb-1">Yağ Fiyatı (₺)</label>
-                      <div className="text-lg font-black text-emerald-800">{seciliIslem.yag_fiyati}</div>
+                    <div className="bg-gradient-to-br from-emerald-50 to-emerald-100/50 p-4 rounded-2xl border-2 border-emerald-300 shadow-lg text-center">
+                      <label className="block text-lg font-bold text-emerald-800 mb-1">Yağ Fiyatı (₺)</label>
+                      <div className="text-4xl font-black text-emerald-800">{seciliIslem.yag_fiyati}</div>
+                    </div>
+                  </div>
+
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div
+                      className={`p-6 rounded-2xl border-2 transition-all text-center transform ${seciliIslem.odeme_tipi === "yag"
+                        ? "border-amber-500 bg-gradient-to-br from-amber-50 to-amber-100/50 shadow-xl shadow-amber-500/20"
+                        : "border-slate-200 bg-white/60 opacity-60"
+                        }`}
+                    >
+                      <p className="text-sm font-bold uppercase tracking-wide text-slate-600 mb-2">
+                        YAĞ KESİNTİSİ
+                        {seciliIslem.odeme_tipi === "yag" && <span className="ml-2 text-amber-600">(SEÇİLEN)</span>}
+                      </p>
+                      <div className="flex items-baseline justify-center gap-2">
+                        <span className="text-5xl font-black text-slate-800">
+                          {hesapDetay.hakKGround}
+                        </span>
+                        <span className="text-base font-bold text-slate-500">
+                          KG Kesilir
+                        </span>
+                      </div>
+                    </div>
+
+                    <div
+                      className={`p-6 rounded-2xl border-2 transition-all text-center transform ${seciliIslem.odeme_tipi === "para"
+                        ? "border-emerald-500 bg-gradient-to-br from-emerald-50 to-emerald-100/50 shadow-xl shadow-emerald-500/20"
+                        : "border-slate-200 bg-white/60 opacity-60"
+                        }`}
+                    >
+                      <p className="text-sm font-bold uppercase tracking-wide text-slate-600 mb-2">
+                        MÜŞTERİ PARA ÖDEYECEK
+                        {seciliIslem.odeme_tipi === "para" && <span className="ml-2 text-emerald-600">(SEÇİLEN)</span>}
+                      </p>
+                      <div className="flex items-baseline justify-center gap-2">
+                        <span className="text-5xl font-black text-emerald-700">
+                          {hesapDetay.paraTL}
+                        </span>
+                        <span className="text-base font-bold text-emerald-600">
+                          ₺ Ödenir
+                        </span>
+                      </div>
                     </div>
                   </div>
 
                   <div className="p-8 bg-gradient-to-br from-white to-slate-50 border-2 border-slate-200 rounded-3xl shadow-2xl backdrop-blur-sm">
                     <div className="grid grid-cols-3 gap-6 text-center divide-x-2 divide-slate-100">
-                      
+
                       <div className="flex flex-col justify-center">
                         <p className="text-xs font-bold text-slate-400 uppercase tracking-wider mb-2">KALAN YAĞ</p>
                         <div className="flex items-baseline justify-center gap-1">
@@ -910,12 +970,14 @@ export default function CikisciPanel() {
                       </div>
 
                       <div className="flex flex-col justify-center">
-                        <p className="text-xs font-bold text-slate-400 uppercase tracking-wider mb-2">MÜŞTERİDE KALAN BİDON</p>
-                        <div className="flex items-baseline justify-center gap-1">
-                          <p className="text-5xl font-black text-slate-800">
-                            {seciliKalanBidonlar.length}
-                          </p>
-                          <p className="text-sm font-bold text-slate-400">ADET</p>
+                        <p className="text-xs font-bold text-slate-400 uppercase tracking-wider mb-2">
+                          VERİLEN BİDON
+                        </p>
+                        <div className="flex items-baseline justify-center">
+                          <span className="text-5xl font-black text-slate-800">
+                            {bidonOzetAyniTelefon?.genelToplam ?? 0}
+                          </span>
+                          <span className="text-sm font-bold text-slate-400 ml-1.5">ADET</span>
                         </div>
                       </div>
                     </div>
@@ -925,13 +987,13 @@ export default function CikisciPanel() {
 
               <div className="space-y-2">
                 <div className="flex items-end justify-between gap-3">
-                  <label className="block text-sm font-bold text-slate-700">
+                  <label className="block text-md font-bold text-slate-700">
                     Müşteriye Verilen Bidon Numaraları
                   </label>
 
                   {seciliIslem.status === 2 && (
                     <div className="flex items-center gap-2">
-                    {!isEditing ? (
+                      {!isEditing ? (
                         <button
                           type="button"
                           onClick={() => {
@@ -942,28 +1004,28 @@ export default function CikisciPanel() {
                         >
                           Düzenle
                         </button>
-                    ) : (
+                      ) : (
                         <>
-                        <button
-                          type="button"
-                          onClick={() => setIsEditing(false)}
-                          className="px-3 py-2 rounded-xl text-sm font-bold text-white bg-rose-600 hover:bg-rose-700 border border-rose-700 transition-colors shadow-md"
-                        >
-                          Vazgeç
-                        </button>
+                          <button
+                            type="button"
+                            onClick={() => setIsEditing(false)}
+                            className="px-3 py-2 rounded-xl text-sm font-bold text-white bg-rose-600 hover:bg-rose-700 border border-rose-700 transition-colors shadow-md"
+                          >
+                            Vazgeç
+                          </button>
 
-                        <button
-                          type="button"
-                          onClick={handleBidonDuzenleKaydet}
-                          className={`px-4 py-2 rounded-xl text-sm font-black border-2 transition-all
+                          <button
+                            type="button"
+                            onClick={handleBidonDuzenleKaydet}
+                            className={`px-4 py-2 rounded-xl text-sm font-black border-2 transition-all
                             bg-emerald-600 text-white border-emerald-700 hover:bg-emerald-700 shadow-md
                             ${bidonSaving ? "opacity-80 cursor-not-allowed" : ""}
                           `}
-                        >
-                          {bidonSaving ? "Kaydediliyor..." : "Kaydet"}
-                        </button>
+                          >
+                            {bidonSaving ? "Kaydediliyor..." : "Kaydet"}
+                          </button>
                         </>
-                    )}
+                      )}
                     </div>
                   )}
                 </div>
@@ -990,14 +1052,16 @@ export default function CikisciPanel() {
                   </div>
                 )}
 
-                <div className="text-center">
-                  <span className="inline-flex items-center gap-2 px-4 py-2 rounded-2xl border-2 border-slate-200 bg-slate-50 text-slate-700 font-black">
-                    Verilen Bidon Sayısı:{" "}
-                    <span className="text-emerald-700">
-                      {isEditing ? parseBidonList(bidonEdit).length : seciliVerilenBidonlar.length}
+                {seciliIslem.status !== 3 && (
+                  <div className="text-center">
+                    <span className="inline-flex items-center gap-2 px-4 py-2 rounded-2xl border-2 border-slate-200 bg-slate-50 text-slate-700 font-black">
+                      Verilen Bidon Sayısı:{" "}
+                      <span className="text-emerald-700">
+                        {isEditing ? parseBidonList(bidonEdit).length : seciliVerilenBidonlar.length}
+                      </span>
                     </span>
-                  </span>
-                </div>
+                  </div>
+                )}
               </div>
 
               {seciliIslem.status === 3 && (
@@ -1030,9 +1094,13 @@ export default function CikisciPanel() {
               {seciliIslem.status !== 3 ? (
                 <button
                   onClick={handleCikisYap}
-                  className="w-full py-4 bg-gradient-to-r from-emerald-500 to-emerald-600 hover:from-emerald-600 hover:to-emerald-700 text-white font-bold rounded-2xl transition-all shadow-lg shadow-emerald-500/30 hover:shadow-emerald-500/50 transform hover:scale-[1.02] active:scale-[0.98] flex items-center justify-center gap-3 text-lg"
+                  disabled={isEditing}
+                  className={`w-full py-4 font-bold rounded-2xl transition-all shadow-lg flex items-center justify-center gap-3 text-lg ${isEditing
+                    ? "bg-slate-300 text-slate-500 cursor-not-allowed"
+                    : "bg-gradient-to-r from-emerald-500 to-emerald-600 hover:from-emerald-600 hover:to-emerald-700 text-white shadow-emerald-500/30 hover:shadow-emerald-500/50 transform hover:scale-[1.02] active:scale-[0.98]"
+                    }`}
                 >
-                  <span>İşlemi Onayla ve Çıkış Yap</span>
+                  <span>{isEditing ? "Önce Bidon Düzenlemeyi Kaydet" : "İşlemi Onayla ve Çıkış Yap"}</span>
                 </button>
               ) : (
                 <div className="w-full py-4 bg-slate-100 text-slate-400 font-bold rounded-2xl text-center border-2 border-slate-200">

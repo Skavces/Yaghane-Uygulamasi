@@ -20,30 +20,42 @@ export default function Login({ onLogin }) {
       title: "Girişçi",
       icon: ClipboardList,
       description: "Zeytin teslim alma",
-      gradient: "from-emerald-400 to-emerald-500",
-      hoverGradient: "from-emerald-500 to-emerald-600",
-      bgGlow: "bg-emerald-200/40",
-      shadowColor: "shadow-emerald-500/30 hover:shadow-emerald-500/50"
+      gradient: "from-blue-500 to-blue-600",
+      hoverGradient: "from-blue-600 to-blue-700",
+      bgGlow: "bg-blue-200/40",
+      shadowColor: "shadow-blue-500/30 hover:shadow-blue-500/50",
+      iconColor: "text-blue-700",
+      headerBg: "from-blue-100 to-blue-50",
+      ringColor: "ring-blue-400",
+      patternColor: "#3b82f6"
     },
     {
       id: "yagci",
       title: "Yağcı",
       icon: Factory,
       description: "Yağ üretim süreci",
-      gradient: "from-emerald-500 to-emerald-600",
-      hoverGradient: "from-emerald-600 to-emerald-700",
-      bgGlow: "bg-emerald-200/40",
-      shadowColor: "shadow-emerald-500/30 hover:shadow-emerald-500/50"
+      gradient: "from-amber-500 to-amber-600",
+      hoverGradient: "from-amber-600 to-amber-700",
+      bgGlow: "bg-amber-200/40",
+      shadowColor: "shadow-amber-500/30 hover:shadow-amber-500/50",
+      iconColor: "text-amber-700",
+      headerBg: "from-amber-100 to-amber-50",
+      ringColor: "ring-amber-400",
+      patternColor: "#f59e0b"
     },
     {
       id: "cikisci",
       title: "Çıkışçı",
       icon: PackageCheck,
       description: "Ürün teslimat",
-      gradient: "from-emerald-600 to-emerald-700",
-      hoverGradient: "from-emerald-700 to-emerald-800",
+      gradient: "from-emerald-500 to-emerald-600",
+      hoverGradient: "from-emerald-600 to-emerald-700",
       bgGlow: "bg-emerald-200/40",
-      shadowColor: "shadow-emerald-500/30 hover:shadow-emerald-500/50"
+      shadowColor: "shadow-emerald-500/30 hover:shadow-emerald-500/50",
+      iconColor: "text-emerald-700",
+      headerBg: "from-emerald-100 to-emerald-50",
+      ringColor: "ring-emerald-400",
+      patternColor: "#059669"
     }
   ]
 
@@ -67,7 +79,7 @@ export default function Login({ onLogin }) {
               <span className="text-7xl relative z-10 inline-block transform hover:scale-110 transition-transform duration-300">🫒</span>
             </div>
           </div>
-          
+
           <div className="space-y-2 mb-3">
             <h1 className="text-4xl md:text-5xl font-black text-transparent bg-clip-text bg-gradient-to-r from-emerald-500 via-emerald-600 to-emerald-700 tracking-tight pb-1">
               KAYA KARDEŞLER
@@ -76,7 +88,7 @@ export default function Login({ onLogin }) {
               ZEYTİNYAĞI FABRİKASI
             </h2>
           </div>
-          
+
           <p className="text-slate-600 text-base font-medium">Devam etmek için rolünüzü seçin</p>
         </div>
 
@@ -84,37 +96,35 @@ export default function Login({ onLogin }) {
           {roles.map((role, index) => (
             <div
               key={role.id}
-              className={`relative group cursor-pointer transition-all duration-500 ${
-                index === 1 ? 'md:-translate-y-8' : ''
-              }`}
+              className={`relative group cursor-pointer transition-all duration-500 ${index === 1 ? 'md:-translate-y-8' : ''
+                }`}
               onClick={() => {
                 setSelectedRole(role.id)
                 handleLogin(role.id)
               }}
             >
-              <div className={`relative bg-white rounded-3xl overflow-hidden transition-all duration-500 ${
-                selectedRole === role.id 
-                  ? 'shadow-2xl ring-4 ring-emerald-400 scale-105' 
-                  : 'shadow-xl hover:shadow-2xl hover:scale-105'
-              }`}>
+              <div className={`relative bg-white rounded-3xl overflow-hidden transition-all duration-500 ${selectedRole === role.id
+                ? `shadow-2xl ring-4 ${role.ringColor} scale-105`
+                : 'shadow-xl hover:shadow-2xl hover:scale-105'
+                }`}>
 
-                <div className="h-32 relative overflow-hidden bg-gradient-to-br from-emerald-100 to-emerald-50">
+                <div className={`h-32 relative overflow-hidden bg-gradient-to-br ${role.headerBg}`}>
                   {index === 0 && (
                     <div className="absolute inset-0" style={{
-                      backgroundImage: `radial-gradient(circle, #059669 1px, transparent 1px)`,
+                      backgroundImage: `radial-gradient(circle, ${role.patternColor} 1px, transparent 1px)`,
                       backgroundSize: '20px 20px',
                       opacity: 0.2
                     }}></div>
                   )}
                   {index === 1 && (
                     <svg className="absolute inset-0 w-full h-full opacity-20" viewBox="0 0 100 100" preserveAspectRatio="none">
-                      <path d="M0,50 Q25,30 50,50 T100,50 L100,100 L0,100 Z" fill="#059669"/>
-                      <path d="M0,60 Q25,40 50,60 T100,60 L100,100 L0,100 Z" fill="#059669" opacity="0.5"/>
+                      <path d="M0,50 Q25,30 50,50 T100,50 L100,100 L0,100 Z" fill={role.patternColor} />
+                      <path d="M0,60 Q25,40 50,60 T100,60 L100,100 L0,100 Z" fill={role.patternColor} opacity="0.5" />
                     </svg>
                   )}
                   {index === 2 && (
                     <div className="absolute inset-0" style={{
-                      backgroundImage: `linear-gradient(#059669 1px, transparent 1px), linear-gradient(90deg, #059669 1px, transparent 1px)`,
+                      backgroundImage: `linear-gradient(${role.patternColor} 1px, transparent 1px), linear-gradient(90deg, ${role.patternColor} 1px, transparent 1px)`,
                       backgroundSize: '20px 20px',
                       opacity: 0.2
                     }}></div>
@@ -122,15 +132,15 @@ export default function Login({ onLogin }) {
 
                   <div className="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2">
                     <div className="transition-all duration-500 group-hover:scale-125 group-hover:rotate-12">
-                      <role.icon className="w-16 h-16 text-emerald-700" strokeWidth={1.5} />
+                      <role.icon className={`w-16 h-16 ${role.iconColor}`} strokeWidth={1.5} />
                     </div>
                   </div>
                 </div>
 
                 <div className="p-8 relative">
                   <div className="text-center mb-6">
-                    <h3 className="text-3xl font-black mb-2 tracking-tight text-emerald-700" 
-                        style={{ fontFamily: "'Georgia', serif" }}>
+                    <h3 className={`text-3xl font-black mb-2 tracking-tight ${role.iconColor}`}
+                      style={{ fontFamily: "'Georgia', serif" }}>
                       {role.title}
                     </h3>
                     <p className="text-slate-600 font-medium text-base">
@@ -141,11 +151,11 @@ export default function Login({ onLogin }) {
                   <button className={`w-full py-4 rounded-2xl font-bold text-lg tracking-wide transition-all duration-300 relative overflow-hidden bg-gradient-to-r ${role.gradient} hover:${role.hoverGradient} text-white shadow-lg ${role.shadowColor}`}>
                     <span className="relative z-10 flex items-center justify-center gap-3">
                       <span>Giriş Yap</span>
-                      <svg className="w-5 h-5 group-hover:translate-x-2 transition-transform" 
-                           fill="none" 
-                           stroke="currentColor" 
-                           viewBox="0 0 24 24">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M13 7l5 5m0 0l-5 5m5-5H6"/>
+                      <svg className="w-5 h-5 group-hover:translate-x-2 transition-transform"
+                        fill="none"
+                        stroke="currentColor"
+                        viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M13 7l5 5m0 0l-5 5m5-5H6" />
                       </svg>
                     </span>
                     <div className="absolute inset-0 bg-white/20 translate-y-full group-hover:translate-y-0 transition-transform"></div>
@@ -154,16 +164,16 @@ export default function Login({ onLogin }) {
 
                 {selectedRole === role.id && (
                   <div className="absolute top-4 right-4 animate-bounce">
-                    <div className="w-10 h-10 bg-emerald-500 rounded-full flex items-center justify-center shadow-lg">
+                    <div className={`w-10 h-10 rounded-full flex items-center justify-center shadow-lg bg-gradient-to-r ${role.gradient}`}>
                       <svg className="w-6 h-6 text-white" fill="currentColor" viewBox="0 0 20 20">
-                        <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd"/>
+                        <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
                       </svg>
                     </div>
                   </div>
                 )}
               </div>
 
-              <div className="absolute -bottom-4 left-1/2 transform -translate-x-1/2 w-3/4 h-4 bg-emerald-200 blur-xl opacity-50 rounded-full"></div>
+              <div className={`absolute -bottom-4 left-1/2 transform -translate-x-1/2 w-3/4 h-4 ${role.bgGlow} blur-xl opacity-50 rounded-full`}></div>
             </div>
           ))}
         </div>
