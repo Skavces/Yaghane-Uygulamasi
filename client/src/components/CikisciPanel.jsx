@@ -185,6 +185,7 @@ export default function CikisciPanel() {
         const tel = String(item.telefon || "").replace(/\D/g, "")
         return tel.includes(q)
       })
+      .sort((a, b) => new Date(b.finished_at || b.created_at) - new Date(a.finished_at || a.created_at))
   }, [tumListe, aktifTab, gecmisTelefonAra, bekleyenMusteriAra])
 
   const verileriHazirla = (islem) => {
@@ -314,7 +315,7 @@ export default function CikisciPanel() {
     const ondalik = hakKGraw - alt
     const hakKGround = ondalik <= 0.5 ? alt : alt + 1
 
-    const paraTL = (hakKGraw * fiyat).toFixed(2)
+    const paraTL = (hakKGraw * fiyat).toFixed(0)
 
     return { hakKGround, paraTL }
   }, [seciliIslem])
@@ -331,8 +332,9 @@ export default function CikisciPanel() {
 
     let genelToplam = 0
     for (const kayit of ilgiliKayitlar) {
-      const adet = parseBidonList(kayit.bidon_no).length
-      genelToplam += adet
+      const verilenAdet = parseBidonList(kayit.bidon_no).length
+      const iadeAdet = parseBidonList(kayit.iade_bidonlar ?? kayit.geri_alinan_bidonlar ?? "").length
+      genelToplam += (verilenAdet - iadeAdet)
     }
 
     return { tel, genelToplam }
@@ -523,29 +525,13 @@ export default function CikisciPanel() {
                 />
               </div>
 
-              <div className="grid grid-cols-3 gap-2">
+              <div>
                 <button
                   type="button"
                   onClick={handleIadeKaydet}
-                  className="py-4 bg-gradient-to-r from-emerald-500 to-emerald-600 hover:from-emerald-600 hover:to-emerald-700 text-white font-bold rounded-2xl shadow-lg transition-all"
+                  className="w-full py-4 bg-gradient-to-r from-emerald-500 to-emerald-600 hover:from-emerald-600 hover:to-emerald-700 text-white font-bold rounded-2xl shadow-lg transition-all"
                 >
                   İade Ekle
-                </button>
-
-                <button
-                  type="button"
-                  onClick={() => setIadeAdet(String(seciliKalanBidonlar.length))}
-                  className="py-4 bg-gradient-to-r from-orange-500 to-orange-600 hover:from-orange-600 hover:to-orange-700 text-white font-bold rounded-2xl shadow-lg transition-all"
-                >
-                  Hepsini iade al
-                </button>
-
-                <button
-                  type="button"
-                  onClick={handleIadeTemizle}
-                  className="py-4 bg-gradient-to-r from-rose-500 to-rose-600 hover:from-rose-600 hover:to-rose-700 text-white font-bold rounded-2xl shadow-lg transition-all"
-                >
-                  İadeleri Temizle
                 </button>
               </div>
             </div>
@@ -671,6 +657,12 @@ export default function CikisciPanel() {
           >
             <span>+ Perakende Satış</span>
           </button>
+          <button
+            onClick={handleExcelIndir}
+            className="w-full mt-3 py-3 bg-gradient-to-r from-emerald-500 to-emerald-600 hover:from-emerald-600 hover:to-emerald-700 text-white font-bold rounded-2xl shadow-lg shadow-emerald-500/30 hover:shadow-emerald-500/50 transition-all transform hover:scale-[1.02] active:scale-[0.98] flex items-center justify-center gap-2 text-sm"
+          >
+            Geçmiş Kayıtları İndir
+          </button>
         </div>
 
         <div className="px-6 pt-4 pb-2">
@@ -759,12 +751,7 @@ export default function CikisciPanel() {
               </div>
             </div>
 
-            <button
-              onClick={handleExcelIndir}
-              className="w-full py-3 bg-gradient-to-r from-emerald-500 to-emerald-600 hover:from-emerald-600 hover:to-emerald-700 text-white font-bold rounded-2xl shadow-lg shadow-emerald-500/30 hover:shadow-emerald-500/50 transition-all transform hover:scale-[1.02] active:scale-[0.98] flex items-center justify-center gap-2 text-sm"
-            >
-              Geçmiş Kayıtları İndir
-            </button>
+
           </div>
         )}
 
@@ -778,7 +765,7 @@ export default function CikisciPanel() {
               <div
                 key={islem.id}
                 onClick={() => setSeciliIslem(islem)}
-                className={`p-4 rounded-2xl cursor-pointer border-2 transition-all relative bg-white/80 backdrop-blur-sm transform hover:scale-[1.01] ${seciliIslem?.id === islem.id
+                className={`p-4 pr-44 rounded-2xl cursor-pointer border-2 transition-all relative overflow-hidden bg-white/80 backdrop-blur-sm transform hover:scale-[1.01] ${seciliIslem?.id === islem.id
                   ? "border-amber-400 shadow-xl shadow-amber-500/20"
                   : "border-slate-200 hover:border-slate-300 hover:shadow-lg"
                   }`}
@@ -792,36 +779,23 @@ export default function CikisciPanel() {
                     <div className="flex gap-2">
                       {islem.odeme_tipi === "yag" && (
                         <span className="inline-block px-2.5 py-1 rounded-xl border-2 border-amber-300 bg-gradient-to-r from-amber-50 to-amber-100 text-amber-700 text-[10px] font-bold">
-                          YAĞ KESİNTİSİ
+                          HAK
                         </span>
                       )}
                       {islem.odeme_tipi === "para" && (
                         <span className="inline-block px-2.5 py-1 rounded-xl border-2 border-emerald-300 bg-gradient-to-r from-emerald-50 to-emerald-100 text-emerald-700 text-[10px] font-bold">
-                          MÜŞTERİ PARA ÖDEYECEK
-                        </span>
-                      )}
-                      {islem.status === 2 && (
-                        <span className="inline-block px-2.5 py-1 rounded-xl border-2 border-slate-400 bg-slate-200 text-slate-600 text-[10px] font-bold">
-                          BEKLİYOR
+                          HAK BEDELİ
                         </span>
                       )}
                     </div>
                   )}
                 </div>
 
-                <div className="flex justify-between items-start">
-                  <div className="flex flex-col">
-                    <span className="font-bold text-[22px] text-slate-800">{islem.ad_soyad}</span>
-                    <span className="text-lg font-semibold text-slate-500 mt-0.5">
-                      {normalizeTelefon(islem.telefon)}
-                    </span>
-                  </div>
-
-                  {islem.musteri_no && (
-                    <span className="text-[30px] font-bold text-slate-500 bg-slate-100 px-3 py-1 rounded-xl border border-slate-200">
-                      #{islem.musteri_no}
-                    </span>
-                  )}
+                <div>
+                  <p className="font-bold text-2xl text-slate-800">{islem.ad_soyad}</p>
+                  <p className="text-2xl font-bold text-slate-700 mt-1">
+                    {normalizeTelefon(islem.telefon)}
+                  </p>
                 </div>
 
                 <div className="flex justify-between items-end mt-3 border-t border-slate-100 pt-2">
@@ -835,6 +809,14 @@ export default function CikisciPanel() {
                     })}
                   </span>
                 </div>
+
+                {islem.musteri_no && (
+                  <div className="absolute top-0 right-0 bottom-0 w-44 bg-emerald-600 rounded-r-xl flex items-center justify-center">
+                    <p className="text-4xl font-black text-white">
+                      #{islem.musteri_no}
+                    </p>
+                  </div>
+                )}
               </div>
             ))
           )}
@@ -919,7 +901,7 @@ export default function CikisciPanel() {
                         }`}
                     >
                       <p className="text-sm font-bold uppercase tracking-wide text-slate-600 mb-2">
-                        YAĞ KESİNTİSİ
+                        HAK
                         {seciliIslem.odeme_tipi === "yag" && <span className="ml-2 text-amber-600">(SEÇİLEN)</span>}
                       </p>
                       <div className="flex items-baseline justify-center gap-2">
@@ -939,7 +921,7 @@ export default function CikisciPanel() {
                         }`}
                     >
                       <p className="text-sm font-bold uppercase tracking-wide text-slate-600 mb-2">
-                        MÜŞTERİ PARA ÖDEYECEK
+                        HAK BEDELİ
                         {seciliIslem.odeme_tipi === "para" && <span className="ml-2 text-emerald-600">(SEÇİLEN)</span>}
                       </p>
                       <div className="flex items-baseline justify-center gap-2">
@@ -971,7 +953,7 @@ export default function CikisciPanel() {
 
                       <div className="flex flex-col justify-center">
                         <p className="text-xs font-bold text-slate-400 uppercase tracking-wider mb-2">
-                          VERİLEN BİDON
+                          VERİLEN TOPLAM BİDON
                         </p>
                         <div className="flex items-baseline justify-center">
                           <span className="text-5xl font-black text-slate-800">

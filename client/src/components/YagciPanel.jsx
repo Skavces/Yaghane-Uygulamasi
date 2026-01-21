@@ -84,27 +84,27 @@ export default function YagciPanel() {
 
     const hakKGraw = (netYag * oran) / 100
     const hakKGround = yuvarlaHakKG(hakKGraw)
-    
-    const paraTL = (hakKGraw * fiyat).toFixed(2) 
-    const yagTL = (hakKGround * fiyat).toFixed(2) 
+
+    const paraTL = (hakKGraw * fiyat).toFixed(0)
+    const yagTL = (hakKGround * fiyat).toFixed(2)
 
     return { hakKGraw, hakKGround, paraTL, yagTL, netYag }
   }, [formData.cikan_yag, formData.hak_oran, formData.yag_fiyati])
 
   useEffect(() => {
     const zeytin = parseFloat(formData.zeytin_kg) || 0
-    const kantarYag = parseFloat(formData.cikan_yag) || 0 
-    const oran = parseFloat(formData.hak_oran) || 0 
+    const kantarYag = parseFloat(formData.cikan_yag) || 0
+    const oran = parseFloat(formData.hak_oran) || 0
     const fiyat = parseFloat(formData.yag_fiyati) || 0
     const tahminiBidonSayisi = kantarYag > 0 ? Math.ceil(kantarYag / 50) : 0
-    const toplamDara = tahminiBidonSayisi * 2 
+    const toplamDara = tahminiBidonSayisi * 2
 
     let netYag = kantarYag - toplamDara
     if (netYag < 0) netYag = 0
 
     const hakKGraw = (netYag * oran) / 100
     const hakKGround = yuvarlaHakKG(hakKGraw)
-    const paraTL = (hakKGraw * fiyat).toFixed(2)
+    const paraTL = (hakKGraw * fiyat).toFixed(0)
     const yagTL = (hakKGround * fiyat).toFixed(2)
 
     setFormData((prev) => {
@@ -125,7 +125,7 @@ export default function YagciPanel() {
 
     setHesapSonuc({
       kalanYag: musteriKalanYag.toFixed(1),
-      bidon52: "0", 
+      bidon52: "0",
       bidon50: "0",
       verilecekBidon,
       randiman: randimanHesap.toFixed(1),
@@ -196,14 +196,14 @@ export default function YagciPanel() {
     if (!s) return 0
 
     const parts = s
-    .replace(/[,\s]+/g, "-")
-    .split("-")
-    .map((x) => x.trim())
-    .filter(Boolean)
-    
+      .replace(/[,\s]+/g, "-")
+      .split("-")
+      .map((x) => x.trim())
+      .filter(Boolean)
+
     return parts.length
   }
-  
+
   const verilenBidonSayisi = useMemo(() => {
     return countBidon(formData.bidon_no)
   }, [formData.bidon_no])
@@ -217,7 +217,7 @@ export default function YagciPanel() {
 
     return d.replace(/(\d{4})(\d{3})(\d{2})(\d{2})/, "$1 $2 $3 $4")
   }
-  
+
   return (
     <div className="min-h-screen bg-gradient-to-br from-emerald-50 via-white to-amber-50 p-6 relative overflow-hidden">
       <div className="absolute inset-0 opacity-[0.03] pointer-events-none">
@@ -300,7 +300,7 @@ export default function YagciPanel() {
               </div>
 
               <div className="mb-4">
-                <label className="block text-xs font-bold text-slate-600 uppercase tracking-wider mb-2">
+                <label className="block text-sm font-bold text-slate-600 uppercase tracking-wider mb-2">
                   Müşteri No İle Ara
                 </label>
 
@@ -312,7 +312,7 @@ export default function YagciPanel() {
                         e.target.value.replace(/\D/g, "").slice(0, 3)
                       )
                     }
-                    placeholder="101"
+                    placeholder="000"
                     inputMode="numeric"
                     className="w-full px-4 py-3 bg-white/70 border-2 border-slate-200 rounded-2xl text-base font-bold text-slate-800 focus:outline-none focus:border-emerald-400 focus:ring-2 focus:ring-emerald-100 transition shadow-sm"
                   />
@@ -360,26 +360,21 @@ export default function YagciPanel() {
                     <button
                       key={m.id}
                       onClick={() => setSecili(m)}
-                      className={`w-full text-left p-4 rounded-2xl border-2 transition-all transform hover:scale-[1.01] ${
-                        active
-                          ? "border-amber-400 bg-gradient-to-r from-amber-50 to-amber-100/50 shadow-lg shadow-amber-500/20"
-                          : "border-slate-200 bg-white/60 hover:bg-white hover:border-slate-300 hover:shadow-md"
-                      }`}
+                      className={`w-full text-left p-4 pr-24 rounded-2xl border-2 transition-all transform hover:scale-[1.01] relative overflow-hidden ${active
+                        ? "border-amber-400 bg-gradient-to-r from-amber-50 to-amber-100/50 shadow-lg shadow-amber-500/20"
+                        : "border-slate-200 bg-white/60 hover:bg-white hover:border-slate-300 hover:shadow-md"
+                        }`}
                     >
-                      <div className="flex items-center justify-between">
-                        <div>
-                          <p className="font-bold text-slate-800 text-lg">{m.ad_soyad}</p>
-                          <p className="text-m text-slate-500 font-medium mt-1">
-                            {m.telefon ? normalizeTelefon(m.telefon) : "-"}
-                          </p>
-                        </div>
-                        <div className="text-right">
-                          <div className="px-3 py-1 bg-emerald-100 rounded-xl">
-                            <p className="text-lg font-bold text-emerald-700">
-                              #{m.musteri_no}
-                            </p>
-                          </div>
-                        </div>
+                      <div>
+                        <p className="font-bold text-slate-800 text-lg">{m.ad_soyad}</p>
+                        <p className="text-lg font-bold text-slate-700 mt-1">
+                          {m.telefon ? normalizeTelefon(m.telefon) : "-"}
+                        </p>
+                      </div>
+                      <div className="absolute top-0 right-0 bottom-0 w-28 bg-emerald-600 rounded-r-xl flex items-center justify-center">
+                        <p className="text-2xl font-black text-white">
+                          #{m.musteri_no}
+                        </p>
                       </div>
                     </button>
                   )
@@ -412,16 +407,16 @@ export default function YagciPanel() {
                         <h3 className="text-2xl font-black text-slate-800">
                           {secili.ad_soyad}
                         </h3>
-                        <p className="mt-2 text-xl font-semibold text-slate-600">
+                        <p className="mt-2 text-xl font-bold text-slate-600">
                           {secili.telefon ? normalizeTelefon(secili.telefon) : "-"}
                         </p>
                       </div>
                       <div className="text-right">
-                        <p className="text-xs font-bold text-slate-500 uppercase tracking-wider mb-2">
+                        <p className="text-m font-bold text-slate-500 uppercase tracking-wider mb-2">
                           Müşteri No
                         </p>
                         <div className="px-4 py-2 bg-white rounded-xl border-2 border-slate-200 shadow-sm">
-                          <h3 className="text-2xl font-black text-slate-800">
+                          <h3 className="text-3xl font-black text-slate-800">
                             #{secili.musteri_no}
                           </h3>
                         </div>
@@ -431,7 +426,7 @@ export default function YagciPanel() {
 
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-4 items-end">
                     <div>
-                      <label className="block text-sm font-bold text-slate-700 mb-2">
+                      <label className="block text-lg font-bold text-slate-700 mb-2 text-center">
                         Gelen Zeytin (KG)
                       </label>
                       <input
@@ -439,36 +434,16 @@ export default function YagciPanel() {
                         name="zeytin_kg"
                         value={formData.zeytin_kg}
                         onChange={handleChange}
-                        className="w-full px-5 py-4 bg-white border-2 border-slate-200 rounded-2xl text-lg font-bold text-slate-800 focus:outline-none focus:border-emerald-400 focus:bg-white transition-all shadow-sm hover:shadow-md"
+                        className="w-full px-5 py-4 bg-white border-2 border-slate-200 rounded-2xl text-3xl font-bold text-slate-800 text-center focus:outline-none focus:border-emerald-400 focus:bg-white transition-all shadow-sm hover:shadow-md"
                         placeholder="500"
                       />
                     </div>
 
                     <div>
-                      <div className="flex items-center justify-between mb-2">
-                        <label className="block text-sm font-bold text-slate-700">
+                      <div className="text-center mb-2">
+                        <label className="block text-lg font-bold text-slate-700">
                           Kantarda Gözüken Yağ (KG)
                         </label>
-                        <button
-                          type="button"
-                          onClick={() => setShowInfo(true)}
-                          className="text-emerald-600 hover:text-emerald-800 transition-colors flex items-center gap-1 text-xs font-bold bg-emerald-50 px-2 py-1 rounded-lg border border-emerald-100 hover:border-emerald-200"
-                          title="Hesaplama Detayını Gör"
-                        >
-                          <svg
-                            xmlns="http://www.w3.org/2000/svg"
-                            viewBox="0 0 24 24"
-                            fill="currentColor"
-                            className="w-4 h-4"
-                          >
-                            <path
-                              fillRule="evenodd"
-                              d="M2.25 12c0-5.385 4.365-9.75 9.75-9.75s9.75 4.365 9.75 9.75-4.365 9.75-9.75 9.75S2.25 17.385 2.25 12zm8.706-1.442c1.146-.573 2.437.463 2.126 1.706l-.709 2.836.042-.02a.75.75 0 01.67 1.34l-.04.022c-1.147.573-2.438-.463-2.127-1.706l.71-2.836-.042.02a.75.75 0 01-.671-1.34l.041-.022zM12 9a.75.75 0 100-1.5.75.75 0 000 1.5z"
-                              clipRule="evenodd"
-                            />
-                          </svg>
-                          Nasıl Hesaplanıyor?
-                        </button>
                       </div>
 
                       <input
@@ -476,7 +451,7 @@ export default function YagciPanel() {
                         name="cikan_yag"
                         value={formData.cikan_yag}
                         onChange={handleChange}
-                        className="w-full px-5 py-4 bg-gradient-to-br from-amber-50 to-amber-100/50 border-2 border-amber-300 rounded-2xl text-lg font-bold text-slate-800 focus:outline-none focus:border-amber-400 focus:from-amber-100 focus:to-amber-50 transition-all shadow-sm hover:shadow-md"
+                        className="w-full px-5 py-4 bg-gradient-to-br from-amber-50 to-amber-100/50 border-2 border-amber-300 rounded-2xl text-3xl font-bold text-slate-800 text-center focus:outline-none focus:border-amber-400 focus:from-amber-100 focus:to-amber-50 transition-all shadow-sm hover:shadow-md"
                         placeholder="0"
                       />
                     </div>
@@ -484,7 +459,7 @@ export default function YagciPanel() {
 
                   <div className="grid grid-cols-2 gap-4">
                     <div>
-                      <label className="block text-sm font-bold text-slate-700 mb-2">
+                      <label className="block text-lg font-bold text-slate-700 mb-2 text-center">
                         Hak Oranı (%)
                       </label>
                       <input
@@ -492,11 +467,12 @@ export default function YagciPanel() {
                         name="hak_oran"
                         value={formData.hak_oran}
                         onChange={handleChange}
-                        className="w-full px-5 py-4 bg-white border-2 border-slate-200 rounded-2xl text-xl font-bold text-slate-800 text-center focus:outline-none focus:border-slate-400 transition-all shadow-sm hover:shadow-md"
+                        className="w-full px-5 py-4 bg-white border-2 border-slate-200 rounded-2xl text-3xl font-bold text-slate-800 text-center focus:outline-none focus:border-slate-400 transition-all shadow-sm hover:shadow-md"
                       />
                     </div>
+
                     <div>
-                      <label className="block text-sm font-bold text-slate-700 mb-2">
+                      <label className="block text-lg font-bold text-slate-700 mb-2 text-center">
                         Yağ Fiyatı (₺)
                       </label>
                       <input
@@ -504,7 +480,7 @@ export default function YagciPanel() {
                         name="yag_fiyati"
                         value={formData.yag_fiyati}
                         onChange={handleChange}
-                        className="w-full px-5 py-4 bg-gradient-to-br from-emerald-50 to-emerald-100/50 border-2 border-emerald-300 rounded-2xl text-xl font-bold text-emerald-700 text-center focus:outline-none focus:border-emerald-400 transition-all shadow-sm hover:shadow-md"
+                        className="w-full px-5 py-4 bg-gradient-to-br from-emerald-50 to-emerald-100/50 border-2 border-emerald-300 rounded-2xl text-3xl font-bold text-emerald-700 text-center focus:outline-none focus:border-emerald-400 transition-all shadow-sm hover:shadow-md"
                       />
                     </div>
                   </div>
@@ -515,20 +491,19 @@ export default function YagciPanel() {
                       onClick={() =>
                         setFormData({ ...formData, odeme_tipi: "yag" })
                       }
-                      className={`p-6 rounded-2xl border-2 transition-all text-left transform hover:scale-[1.02] ${
-                        formData.odeme_tipi === "yag"
-                          ? "border-amber-500 bg-gradient-to-br from-amber-50 to-amber-100/50 shadow-xl shadow-amber-500/20"
-                          : "border-slate-200 bg-white/60 hover:border-slate-300 hover:shadow-lg"
-                      }`}
+                      className={`p-6 rounded-2xl border-2 transition-all text-center transform hover:scale-[1.02] ${formData.odeme_tipi === "yag"
+                        ? "border-amber-500 bg-gradient-to-br from-amber-50 to-amber-100/50 shadow-xl shadow-amber-500/20"
+                        : "border-slate-200 bg-white/60 hover:border-slate-300 hover:shadow-lg"
+                        }`}
                     >
-                      <p className="text-xs font-bold uppercase tracking-wide text-slate-600 mb-2">
+                      <p className="text-sm font-bold uppercase tracking-wide text-slate-600 mb-2">
                         YAĞ KESİNTİSİ
                       </p>
-                      <div className="flex items-baseline gap-2">
-                        <span className="text-4xl font-black text-slate-800">
+                      <div className="flex items-baseline justify-center gap-2">
+                        <span className="text-5xl font-black text-slate-800">
                           {formData.firma_hakki || "0"}
                         </span>
-                        <span className="text-sm font-bold text-slate-500">
+                        <span className="text-lg font-bold text-slate-500">
                           KG Kesilir
                         </span>
                       </div>
@@ -539,20 +514,19 @@ export default function YagciPanel() {
                       onClick={() =>
                         setFormData({ ...formData, odeme_tipi: "para" })
                       }
-                      className={`p-6 rounded-2xl border-2 transition-all text-left transform hover:scale-[1.02] ${
-                        formData.odeme_tipi === "para"
-                          ? "border-emerald-500 bg-gradient-to-br from-emerald-50 to-emerald-100/50 shadow-xl shadow-emerald-500/20"
-                          : "border-slate-200 bg-white/60 hover:border-slate-300 hover:shadow-lg"
-                      }`}
+                      className={`p-6 rounded-2xl border-2 transition-all text-center transform hover:scale-[1.02] ${formData.odeme_tipi === "para"
+                        ? "border-emerald-500 bg-gradient-to-br from-emerald-50 to-emerald-100/50 shadow-xl shadow-emerald-500/20"
+                        : "border-slate-200 bg-white/60 hover:border-slate-300 hover:shadow-lg"
+                        }`}
                     >
-                      <p className="text-xs font-bold uppercase tracking-wide text-slate-600 mb-2">
-                        MÜŞTERİ PARA ÖDEYECEK
+                      <p className="text-sm font-bold uppercase tracking-wide text-slate-600 mb-2">
+                        HAK BEDELİ
                       </p>
-                      <div className="flex items-baseline gap-2">
-                        <span className="text-4xl font-black text-emerald-700">
-                           {hesap.paraTL}
+                      <div className="flex items-baseline justify-center gap-2">
+                        <span className="text-5xl font-black text-emerald-700">
+                          {hesap.paraTL}
                         </span>
-                        <span className="text-sm font-bold text-emerald-600">
+                        <span className="text-lg font-bold text-emerald-600">
                           ₺ Ödenir
                         </span>
                       </div>
@@ -587,7 +561,7 @@ export default function YagciPanel() {
 
                       <div className="flex flex-col justify-center">
                         <p className="text-xs font-bold text-slate-400 uppercase tracking-wider mb-2">
-                          VERİLECEK BİDON
+                          VERİLEN BİDON
                         </p>
                         <div className="flex items-baseline justify-center gap-1">
                           <p className="text-5xl font-black text-slate-800">
@@ -600,7 +574,7 @@ export default function YagciPanel() {
                   </div>
 
                   <div>
-                    <label className="block text-sm font-bold text-slate-700 mb-2">
+                    <label className="block text-sm font-bold text-slate-700 mb-2 text-center">
                       Verilen Bidon Numaraları
                     </label>
 
@@ -652,7 +626,7 @@ export default function YagciPanel() {
                   </div>
 
                   <div>
-                    <label className="block text-sm font-bold text-slate-700 mb-2">
+                    <label className="block text-sm font-bold text-slate-700 mb-2 text-center">
                       İşlem Notları
                     </label>
                     <textarea
@@ -660,7 +634,7 @@ export default function YagciPanel() {
                       value={formData.notlar}
                       onChange={handleChange}
                       rows="3"
-                      className="w-full px-5 py-4 bg-white border-2 border-slate-200 rounded-2xl text-slate-800 placeholder:text-slate-400 focus:outline-none focus:border-slate-400 focus:bg-white transition-all resize-none shadow-sm hover:shadow-md"
+                      className="w-full px-5 py-4 bg-white border-2 border-slate-200 rounded-2xl text-slate-800 text-center placeholder:text-slate-400 focus:outline-none focus:border-slate-400 focus:bg-white transition-all resize-none shadow-sm hover:shadow-md"
                       placeholder="İşlem hakkında not ekle..."
                     />
                   </div>
@@ -699,88 +673,6 @@ export default function YagciPanel() {
           </div>
         </div>
       </div>
-            {showInfo && (
-              <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
-                <div
-                  className="absolute inset-0 bg-slate-900/40 backdrop-blur-sm transition-opacity"
-                  onClick={() => setShowInfo(false)}
-                ></div>
-                
-                <div className="bg-white rounded-3xl shadow-2xl w-full max-w-lg relative z-10 overflow-hidden animate-fadeInUp">
-                  <div className="bg-gradient-to-r from-emerald-500 to-emerald-600 p-6 flex items-center justify-between">
-                    <h3 className="text-xl font-bold text-white flex items-center gap-2">
-                      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" className="w-6 h-6">
-                        <path fillRule="evenodd" d="M2.25 12c0-5.385 4.365-9.75 9.75-9.75s9.75 4.365 9.75 9.75-4.365 9.75-9.75 9.75S2.25 17.385 2.25 12zm8.706-1.442c1.146-.573 2.437.463 2.126 1.706l-.709 2.836.042-.02a.75.75 0 01.67 1.34l-.04.022c-1.147.573-2.438-.463-2.127-1.706l.71-2.836-.042.02a.75.75 0 01-.671-1.34l.041-.022zM12 9a.75.75 0 100-1.5.75.75 0 000 1.5z" clipRule="evenodd" />
-                      </svg>
-                      Yağ Hesaplama Mantığı
-                    </h3>
-                    <button
-                      onClick={() => setShowInfo(false)}
-                      className="text-white/80 hover:text-white bg-white/10 hover:bg-white/20 p-2 rounded-full transition"
-                    >
-                      <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={2.5} stroke="currentColor" className="w-5 h-5">
-                        <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
-                      </svg>
-                    </button>
-                  </div>
-
-                  <div className="p-6 space-y-4">
-                    <div className="flex items-start gap-4">
-                      <div className="w-8 h-8 rounded-full bg-emerald-100 flex items-center justify-center text-emerald-700 font-bold shrink-0">1</div>
-                      <div>
-                        <h4 className="font-bold text-slate-800">Kantar (Brüt) Yağ</h4>
-                        <p className="text-sm text-slate-500">Kantarın gösterdiği toplam yağ miktarı girilir.</p>
-                      </div>
-                    </div>
-
-                    <div className="flex items-start gap-4">
-                      <div className="w-8 h-8 rounded-full bg-amber-100 flex items-center justify-center text-amber-700 font-bold shrink-0">2</div>
-                      <div>
-                        <h4 className="font-bold text-slate-800">Dara Düşümü</h4>
-                        <p className="text-sm text-slate-500">
-                          Girilen yağ 50'ye bölünerek bidon sayısı bulunur. Her bidon için <span className="font-bold text-slate-700">2 KG</span> dara düşülür.
-                        </p>
-                        <div className="mt-2 bg-slate-50 p-3 rounded-xl border border-slate-200 text-xs text-slate-600 font-mono">
-                          (Yağ / 50) = Bidon Sayısı<br/>
-                          Dara = Bidon Sayısı x 2
-                        </div>
-                      </div>
-                    </div>
-
-                    <div className="flex items-start gap-4">
-                      <div className="w-8 h-8 rounded-full bg-blue-100 flex items-center justify-center text-blue-700 font-bold shrink-0">3</div>
-                      <div>
-                        <h4 className="font-bold text-slate-800">Net Yağ</h4>
-                        <p className="text-sm text-slate-500">
-                          Kantar yağından toplam dara çıkarılarak <span className="font-bold text-emerald-600">NET YAĞ</span> bulunur. Tüm hak hesaplamaları bu net miktar üzerinden yapılır.
-                        </p>
-                      </div>
-                    </div>
-
-                    <div className="flex items-start gap-4">
-                      <div className="w-8 h-8 rounded-full bg-purple-100 flex items-center justify-center text-purple-700 font-bold shrink-0">4</div>
-                      <div>
-                        <h4 className="font-bold text-slate-800">Hak Kesintisi</h4>
-                        <p className="text-sm text-slate-500">
-                          Net yağ üzerinden yüzde hesaplanır ve çıkan sonuç aşağı/yukarı yuvarlanarak (örn: 15.4k 🡺 15kg) kesinti yapılır.
-                        </p>
-                      </div>
-                    </div>
-
-                  </div>
-
-                  <div className="p-6 bg-slate-50 border-t border-slate-100 text-center">
-                    <button
-                      onClick={() => setShowInfo(false)}
-                      className="w-full py-3 bg-white border-2 border-slate-200 hover:border-slate-300 text-slate-700 font-bold rounded-xl transition shadow-sm"
-                    >
-                      Kapat
-                    </button>
-                  </div>
-                </div>
-              </div>
-            )}
-
     </div>
   )
 }

@@ -34,20 +34,6 @@ export default function Login({ onLogin }) {
       title: "Yağcı",
       icon: Factory,
       description: "Yağ üretim süreci",
-      gradient: "from-amber-500 to-amber-600",
-      hoverGradient: "from-amber-600 to-amber-700",
-      bgGlow: "bg-amber-200/40",
-      shadowColor: "shadow-amber-500/30 hover:shadow-amber-500/50",
-      iconColor: "text-amber-700",
-      headerBg: "from-amber-100 to-amber-50",
-      ringColor: "ring-amber-400",
-      patternColor: "#f59e0b"
-    },
-    {
-      id: "cikisci",
-      title: "Çıkışçı",
-      icon: PackageCheck,
-      description: "Ürün teslimat",
       gradient: "from-emerald-500 to-emerald-600",
       hoverGradient: "from-emerald-600 to-emerald-700",
       bgGlow: "bg-emerald-200/40",
@@ -56,6 +42,20 @@ export default function Login({ onLogin }) {
       headerBg: "from-emerald-100 to-emerald-50",
       ringColor: "ring-emerald-400",
       patternColor: "#059669"
+    },
+    {
+      id: "cikisci",
+      title: "Çıkışçı",
+      icon: PackageCheck,
+      description: "Ürün teslimat",
+      gradient: "from-amber-500 to-amber-600",
+      hoverGradient: "from-amber-600 to-amber-700",
+      bgGlow: "bg-amber-200/40",
+      shadowColor: "shadow-amber-500/30 hover:shadow-amber-500/50",
+      iconColor: "text-amber-700",
+      headerBg: "from-amber-100 to-amber-50",
+      ringColor: "ring-amber-400",
+      patternColor: "#f59e0b"
     }
   ]
 
