@@ -5,6 +5,7 @@ axios.defaults.baseURL = "/"
 
 export default function YagciPanel() {
   const [liste, setListe] = useState([])
+  const [tumListe, setTumListe] = useState([])
   const [loadingListe, setLoadingListe] = useState(false)
   const [listeHata, setListeHata] = useState("")
   const [secili, setSecili] = useState(null)
@@ -46,8 +47,18 @@ export default function YagciPanel() {
     }
   }
 
+  const fetchTumListe = async () => {
+    try {
+      const res = await axios.get("/api/liste")
+      setTumListe(Array.isArray(res.data) ? res.data : [])
+    } catch (e) {
+      console.error("Geçmiş liste çekilemedi", e)
+    }
+  }
+
   useEffect(() => {
     fetchBekleyenler()
+    fetchTumListe()
   }, [])
 
   useEffect(() => {
@@ -217,6 +228,44 @@ export default function YagciPanel() {
 
     return d.replace(/(\d{4})(\d{3})(\d{2})(\d{2})/, "$1 $2 $3 $4")
   }
+
+  const urunIadeBidonSayisi = (item) => {
+    const iadeStr = item.iade_bidonlar ?? item.geri_alinan_bidonlar ?? ""
+    return countBidon(iadeStr)
+  }
+
+  const toplamGecmisBidon = useMemo(() => {
+    if (!secili) return 0
+    if (!tumListe.length) return 0
+
+     
+    const hedefNo = secili.musteri_no
+    const hedefTel = secili.telefon ? normalizeTelefon(secili.telefon) : null
+
+     
+    const gecmisIslemler = tumListe.filter(item => {
+      if (item.status !== 3) return false
+
+       
+      if (hedefNo && String(item.musteri_no) === String(hedefNo)) return true
+
+       
+      if (hedefTel && item.telefon && normalizeTelefon(item.telefon) === hedefTel) return true
+
+      return false
+    })
+
+    let toplam = 0
+    gecmisIslemler.forEach(islem => {
+      const verilen = countBidon(islem.bidon_no)
+      const iade = urunIadeBidonSayisi(islem)
+      const fark = verilen - iade
+      if (fark > 0) toplam += fark
+    })
+
+    return toplam
+  }, [secili, tumListe])
+
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-emerald-50 via-white to-amber-50 p-6 relative overflow-hidden">
@@ -497,7 +546,7 @@ export default function YagciPanel() {
                         }`}
                     >
                       <p className="text-sm font-bold uppercase tracking-wide text-slate-600 mb-2">
-                        YAĞ KESİNTİSİ
+                        HAK
                       </p>
                       <div className="flex items-baseline justify-center gap-2">
                         <span className="text-5xl font-black text-slate-800">
@@ -619,9 +668,15 @@ export default function YagciPanel() {
                     />
                   </div>
 
-                  <div className="mt-2 text-center">
-                    <span className="inline-flex items-center gap-2 px-4 py-2 rounded-2xl border-2 border-slate-200 bg-slate-50 text-slate-700 font-black">
-                      Verilen Bidon Sayısı: <span className="text-emerald-700">{verilenBidonSayisi}</span>
+                  <div className="mt-2 flex flex-col items-center gap-3">
+                    <span className="inline-flex items-center gap-2 px-4 py-2.5 rounded-2xl border-2 border-slate-200 bg-slate-50 text-slate-700 font-black relative overflow-hidden group hover:border-emerald-300 transition-colors w-full max-w-sm justify-center">
+                      <div className="absolute inset-0 bg-emerald-100/0 group-hover:bg-emerald-100/20 transition-colors"></div>
+                      Şu An Verilen Bidon Sayısı: <span className="text-emerald-700 text-lg">{verilenBidonSayisi}</span>
+                    </span>
+
+                    <span className="inline-flex items-center gap-2 px-4 py-2.5 rounded-2xl border-2 border-slate-200 bg-slate-50 text-slate-700 font-black relative overflow-hidden group hover:border-amber-300 transition-colors w-full max-w-sm justify-center">
+                      <div className="absolute inset-0 bg-amber-100/0 group-hover:bg-amber-100/20 transition-colors"></div>
+                      Numaraya Verilen Toplam Bidon Sayısı: <span className="text-amber-700 text-lg">{toplamGecmisBidon + verilenBidonSayisi}</span>
                     </span>
                   </div>
 

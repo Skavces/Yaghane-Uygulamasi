@@ -14,11 +14,11 @@ function App() {
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-slate-50 to-slate-100">
-      {/* Navbar */}
+      { }
       <nav className="bg-gradient-to-r from-green-600 to-green-700 border-b border-green-800 shadow-sm sticky top-0 z-50 backdrop-blur-lg">
         <div className="max-w-7xl mx-auto px-6 py-4">
           <div className="flex justify-between items-center">
-            {/* Sol Taraf - Logo ve Başlık */}
+            { }
             <div className="flex items-center gap-3">
               <span className="text-4xl">🫒</span>
               <div>
@@ -29,7 +29,7 @@ function App() {
               </div>
             </div>
 
-            {/* Sağ Taraf - Çıkış Butonu */}
+            { }
             <button 
               onClick={handleLogout} 
               className="group flex items-center gap-2 px-5 py-2.5 bg-white hover:bg-red-500 text-green-700 hover:text-white font-semibold rounded-xl transition-all shadow-md hover:shadow-lg hover:scale-105 active:scale-95"
@@ -53,7 +53,7 @@ function App() {
         </div>
       </nav>
 
-      {/* İçerik Alanı */}
+      { }
       <div className="pt-6">
         {role === "girisci" && <GirisciPanel />}
         {role === "yagci" && <YagciPanel />}

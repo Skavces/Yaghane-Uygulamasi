@@ -451,8 +451,8 @@ export default function GirisciPanel() {
                             const statusColor = isBekleyecek
                               ? "bg-gradient-to-r from-indigo-100 to-indigo-200 text-indigo-800 border-indigo-300"
                               : isSirada
-                                ? "bg-gradient-to-r from-amber-100 to-amber-200 text-amber-800 border-amber-300"
-                                : "bg-gradient-to-r from-orange-100 to-orange-200 text-orange-800 border-orange-300"
+                                ? "bg-gradient-to-r from-yellow-100 to-yellow-200 text-yellow-800 border-yellow-300"
+                                : "bg-gradient-to-r from-red-200 to-red-300 text-red-900 border-red-300"
 
                             return (
                               <tr key={kayit.id} className="hover:bg-slate-50 transition duration-150">

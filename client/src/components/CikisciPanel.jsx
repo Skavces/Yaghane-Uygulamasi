@@ -92,7 +92,11 @@ export default function CikisciPanel() {
   }
 
   const handleSatisInput = (e) => {
-    setSatisForm({ ...satisForm, [e.target.name]: e.target.value })
+    let val = e.target.value
+    if (e.target.name === "ad_soyad") {
+      val = val.toLocaleUpperCase("tr-TR")
+    }
+    setSatisForm({ ...satisForm, [e.target.name]: val })
   }
 
   const handleBidonInput = (val) => {
@@ -231,26 +235,66 @@ export default function CikisciPanel() {
       const res = await axios.get("/api/liste")
       const gecmis = (res.data || []).filter((x) => x.status === 3)
 
-      const rows = gecmis.map((x) => ({
-        Tarih: x.created_at ? new Date(x.created_at).toLocaleString("tr-TR") : "",
-        "Müşteri No": x.musteri_no ?? "",
-        "Ad Soyad": x.ad_soyad ?? "",
-        Telefon: x.telefon ?? "",
-        "Zeytin (KG)": x.zeytin_kg ?? "",
-        "Çıkan Yağ (KG)": x.cikan_yag ?? "",
-        "Hak Oranı (%)": x.hak_oran ?? "",
-        "Firma Hakkı (KG)": x.firma_hakki ?? "",
-        "Firma Hakkı (₺)": x.firma_hakki_tl ?? "",
-        "Ödeme Tipi": x.odeme_tipi === "yag" ? "Yağ" : x.odeme_tipi === "para" ? "Para" : "Satış",
-        "Yağ Fiyatı (₺)": x.yag_fiyati ?? "",
-        "Verilen Bidonlar": x.bidon_no ?? "",
-        "Geri Alınan Bidonlar": x.iade_bidonlar ?? x.geri_alinan_bidonlar ?? "",
-        "Kalan (Müşteride)":
-          bidonKalanHesapla(x.bidon_no ?? "", x.iade_bidonlar ?? x.geri_alinan_bidonlar ?? "").join("-") || "",
-        Notlar: x.notlar ?? "",
-      }))
+      const splitName = (fullName) => {
+        const parts = (fullName || "").trim().split(" ")
+        if (parts.length === 1) return { ad: parts[0], soyad: "" }
+        const soyad = parts.pop()
+        const ad = parts.join(" ")
+        return { ad, soyad }
+      }
+
+      const rows = gecmis.map((x) => {
+        const d = new Date(x.created_at || new Date())
+        const tarih = d.toLocaleDateString("tr-TR")
+        const saat = d.toLocaleTimeString("tr-TR", { hour: "2-digit", minute: "2-digit" })
+        const { ad, soyad } = splitName(x.ad_soyad)
+        const verilenCount = parseBidonList(x.bidon_no).length
+        const iadeCount = parseBidonList(x.iade_bidonlar ?? x.geri_alinan_bidonlar ?? "").length
+        const kalanCount = verilenCount - iadeCount
+
+        return {
+          "TARİH": tarih,
+          "SAAT": saat,
+          "MÜŞTERİ NO": x.musteri_no ?? "",
+          "AD": ad,
+          "SOYAD": soyad,
+          "GELEN ZEYTİN (KG)": x.zeytin_kg ?? "",
+          "ÇIKAN YAĞ (KG)": x.cikan_yag ?? "",
+          "HAK ORANI (%)": x.hak_oran ?? "",
+          "ÖDEME TİPİ": x.odeme_tipi === "yag" ? "YAĞ" : x.odeme_tipi === "para" ? "PARA" : "PERAKENDE",
+          "HAK (KG)": x.firma_hakki ?? "",
+          "HAK BEDELİ (₺)": x.firma_hakki_tl ?? "",
+          "YAĞ FİYATI (₺)": x.yag_fiyati ?? "",
+          "VERİLEN TOPLAM BİDON": verilenCount,
+          "GERİ ALINAN TOPLAM BİDON": iadeCount,
+          "MÜŞTERİDE KALAN TOPLAM BİDON": kalanCount
+        }
+      })
 
       const ws = XLSX.utils.json_to_sheet(rows)
+      const range = XLSX.utils.decode_range(ws['!ref'])
+      for (let R = range.s.r; R <= range.e.r; ++R) {
+        for (let C = range.s.c; C <= range.e.c; ++C) {
+          const address = XLSX.utils.encode_cell({ r: R, c: C })
+          if (!ws[address]) continue
+
+          const isHeader = R === 0
+
+          ws[address].s = {
+            font: { sz: 12, bold: isHeader, color: { rgb: "000000" } },
+            alignment: { horizontal: "center", vertical: "center" },
+            fill: {
+              fgColor: { rgb: isHeader ? "6EE7B7" : "F0FDF4" }
+            },
+            border: {
+              top: { style: "thin", color: { rgb: "000000" } },
+              bottom: { style: "thin", color: { rgb: "000000" } },
+              left: { style: "thin", color: { rgb: "000000" } },
+              right: { style: "thin", color: { rgb: "000000" } }
+            }
+          }
+        }
+      }
 
       if (rows.length > 0) {
         const keys = Object.keys(rows[0])
@@ -260,7 +304,7 @@ export default function CikisciPanel() {
             const val = row[key] ? String(row[key]) : ""
             if (val.length > maxLen) maxLen = val.length
           })
-          return { wch: maxLen + 2 }
+          return { wch: maxLen + 8 }
         })
         ws["!cols"] = wscols
       }
@@ -478,7 +522,7 @@ export default function CikisciPanel() {
       <div className="absolute bottom-40 left-1/3 w-72 h-72 bg-amber-200/30 rounded-full blur-3xl animate-pulse delay-1000 pointer-events-none"></div>
 
       {iadeModalAcik && seciliIslem && (
-        <div className="absolute inset-0 z-50 bg-black/50 backdrop-blur-sm flex items-center justify-center p-4">
+        <div className="fixed inset-0 z-50 bg-black/50 backdrop-blur-sm flex items-center justify-center p-4">
           <div className="bg-white/90 backdrop-blur-xl rounded-3xl shadow-2xl w-full max-w-xl overflow-hidden border-2 border-white/60">
             <div className="bg-gradient-to-r from-emerald-50 to-amber-50 p-6 border-b-2 border-slate-200 flex justify-between items-center">
               <div>
@@ -540,7 +584,7 @@ export default function CikisciPanel() {
       )}
 
       {satisModalAcik && (
-        <div className="absolute inset-0 z-50 bg-black/50 backdrop-blur-sm flex items-center justify-center p-4">
+        <div className="fixed inset-0 z-50 bg-black/50 backdrop-blur-sm flex items-center justify-center p-4">
           <div className="bg-white/90 backdrop-blur-xl rounded-3xl shadow-2xl w-full max-w-lg overflow-hidden border-2 border-white/60">
             <div className="bg-gradient-to-r from-emerald-50 to-amber-50 p-6 border-b-2 border-slate-200 flex justify-between items-center">
               <h2 className="text-2xl font-black text-slate-800">Perakende Satış</h2>
@@ -623,7 +667,7 @@ export default function CikisciPanel() {
                   value={satisForm.bidon_no}
                   onChange={(e) => handleBidonInput(e.target.value)}
                   onKeyDown={(e) => {
-                    if (e.key === " ") {
+                    if (e.key === " " || e.key === "Enter") {
                       e.preventDefault()
                       if (satisForm.bidon_no.length > 0 && !satisForm.bidon_no.endsWith("-")) {
                         setSatisForm((prev) => ({ ...prev, bidon_no: prev.bidon_no + "-" }))
@@ -659,21 +703,23 @@ export default function CikisciPanel() {
           </button>
           <button
             onClick={handleExcelIndir}
-            className="w-full mt-3 py-3 bg-gradient-to-r from-emerald-500 to-emerald-600 hover:from-emerald-600 hover:to-emerald-700 text-white font-bold rounded-2xl shadow-lg shadow-emerald-500/30 hover:shadow-emerald-500/50 transition-all transform hover:scale-[1.02] active:scale-[0.98] flex items-center justify-center gap-2 text-sm"
+            className="w-full mt-4 py-4 bg-gradient-to-r from-emerald-500 to-emerald-600 hover:from-emerald-600 hover:to-emerald-700 text-white font-bold rounded-2xl shadow-lg shadow-emerald-500/30 hover:shadow-emerald-500/50 transition-all transform hover:scale-[1.02] active:scale-[0.98] flex items-center justify-center gap-2 text-sm"
           >
             Geçmiş Kayıtları İndir
           </button>
         </div>
 
         <div className="px-6 pt-4 pb-2">
-          <div className="flex bg-gradient-to-r from-slate-50 to-slate-100 p-1.5 rounded-2xl border-2 border-slate-200 shadow-inner">
+          <div className="flex bg-slate-100 p-1.5 rounded-2xl border-2 border-slate-200 shadow-inner">
             <button
               onClick={() => {
                 setAktifTab("bekleyen")
                 setSeciliIslem(null)
                 setBekleyenMusteriAra("")
               }}
-              className={`flex-1 py-3 text-sm font-bold rounded-xl transition-all ${aktifTab === "bekleyen" ? "bg-white text-slate-800 shadow-md" : "text-slate-400 hover:text-slate-600"
+              className={`flex-1 py-3.5 text-md font-bold rounded-xl transition-all duration-200 ${aktifTab === "bekleyen"
+                ? "bg-gradient-to-r from-amber-500 to-amber-600 text-white shadow-lg shadow-amber-500/40 ring-2 ring-amber-400/50"
+                : "text-slate-400 hover:text-slate-600 hover:bg-slate-50"
                 }`}
             >
               Bekleyen ({tumListe.filter((i) => i.status === 2).length})
@@ -685,7 +731,9 @@ export default function CikisciPanel() {
                 setGecmisTelefonAra("")
                 setBekleyenMusteriAra("")
               }}
-              className={`flex-1 py-3 text-sm font-bold rounded-xl transition-all ${aktifTab === "gecmis" ? "bg-white text-slate-800 shadow-md" : "text-slate-400 hover:text-slate-600"
+              className={`flex-1 py-3.5 text-md font-bold rounded-xl transition-all duration-200 ${aktifTab === "gecmis"
+                ? "bg-gradient-to-r from-emerald-500 to-emerald-600 text-white shadow-lg shadow-emerald-500/40 ring-2 ring-emerald-400/50"
+                : "text-slate-400 hover:text-slate-600 hover:bg-slate-50"
                 }`}
             >
               Geçmiş
@@ -696,7 +744,7 @@ export default function CikisciPanel() {
         {aktifTab === "bekleyen" && (
           <div className="px-6 pt-3 space-y-3">
             <div>
-              <label className="block text-xs font-bold text-slate-500 uppercase mb-2">Müşteri numarasına göre ara</label>
+              <label className="block text-sm font-bold text-slate-500 uppercase mb-2">Müşteri numarası ile ara</label>
               <div className="relative">
                 <input
                   value={bekleyenMusteriAra}
@@ -726,7 +774,7 @@ export default function CikisciPanel() {
         {aktifTab === "gecmis" && (
           <div className="px-6 pt-3 space-y-3">
             <div>
-              <label className="block text-xs font-bold text-slate-500 uppercase mb-2">Telefona göre ara</label>
+              <label className="block text-sm font-bold text-slate-500 uppercase mb-2">Telefon Numarası ile Ara</label>
               <div className="relative">
                 <input
                   value={gecmisTelefonAra}
@@ -810,11 +858,17 @@ export default function CikisciPanel() {
                   </span>
                 </div>
 
-                {islem.musteri_no && (
-                  <div className="absolute top-0 right-0 bottom-0 w-44 bg-emerald-600 rounded-r-xl flex items-center justify-center">
-                    <p className="text-4xl font-black text-white">
-                      #{islem.musteri_no}
-                    </p>
+                {(islem.musteri_no || islem.odeme_tipi === "SATIS") && (
+                  <div className="absolute top-0 right-0 bottom-0 w-44 bg-emerald-600 rounded-r-xl flex items-center justify-center p-2">
+                    {islem.odeme_tipi === "SATIS" ? (
+                      <p className="text-2xl font-black text-white text-center leading-tight">
+                        PERAKENDE
+                      </p>
+                    ) : (
+                      <p className="text-4xl font-black text-white">
+                        #{islem.musteri_no}
+                      </p>
+                    )}
                   </div>
                 )}
               </div>
