@@ -108,9 +108,81 @@ db.serialize(() => {
       }
     }
   )
+
+  db.run(
+    `CREATE TABLE IF NOT EXISTS settings (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      yag_fiyati REAL DEFAULT 300,
+      hak_oran REAL DEFAULT 8
+    )`,
+    (err) => {
+      if (err) console.error("Settings tablosu oluşturma hatası:", err.message)
+      else {
+         // Varsayılan ayar yoksa ekle
+         db.get("SELECT count(*) as count FROM settings", [], (err, row) => {
+            if(err) return;
+            if(row && row.count === 0) {
+              db.run("INSERT INTO settings (yag_fiyati, hak_oran) VALUES (300, 8)")
+            }
+         })
+      }
+    }
+  )
+
+  db.run(`ALTER TABLE islemler ADD COLUMN iade_bidonlar TEXT DEFAULT ''`, (err) => {
+    if (err) {
+      if (!String(err.message || "").toLowerCase().includes("duplicate")) {
+        console.error("iade_bidonlar kolon ekleme hatası:", err.message)
+      }
+    }
+  })
+
+  db.run(
+    `
+    CREATE UNIQUE INDEX IF NOT EXISTS uniq_active_musteri_no
+    ON islemler(musteri_no)
+    WHERE status != 3
+  `,
+    (err) => {
+      if (err) {
+        console.error("UNIQUE index oluşturma hatası:", err.message)
+        console.error("Muhtemelen DB'de aynı musteri_no için status!=3 birden fazla kayıt var.")
+      }
+    }
+  )
 })
 
 const io = new Server(server, { cors: { origin: true, credentials: true } })
+
+app.get("/api/settings", (req, res) => {
+  db.get("SELECT * FROM settings LIMIT 1", [], (err, row) => {
+    if (err) return res.status(500).json(err)
+    if (!row) return res.json({ yag_fiyati: 300, hak_oran: 8 }) // Fallback
+    res.json(row)
+  })
+})
+
+app.put("/api/settings", (req, res) => {
+  const { yag_fiyati, hak_oran } = req.body
+  // Tek bir satır varsayıyoruz, update veya insert
+  db.get("SELECT id FROM settings LIMIT 1", [], (err, row) => {
+    if (err) return res.status(500).json(err)
+    
+    if (row) {
+       db.run("UPDATE settings SET yag_fiyati=?, hak_oran=? WHERE id=?", [yag_fiyati, hak_oran, row.id], (err2) => {
+          if (err2) return res.status(500).json(err2)
+          io.emit("settings-updated", { yag_fiyati, hak_oran })
+          res.json({ msg: "Ayarlar güncellendi" })
+       })
+    } else {
+       db.run("INSERT INTO settings (yag_fiyati, hak_oran) VALUES (?, ?)", [yag_fiyati, hak_oran], function(err2) {
+          if (err2) return res.status(500).json(err2)
+          io.emit("settings-updated", { yag_fiyati, hak_oran })
+          res.json({ msg: "Ayarlar oluşturuldu" })
+       })
+    }
+  })
+})
 
 app.get("/api/giris-bekleyenler", (req, res) => {
   db.all("SELECT * FROM islemler WHERE status != 3 ORDER BY id DESC", [], (err, rows) => {

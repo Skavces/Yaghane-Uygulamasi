@@ -7,7 +7,7 @@ import { saveAs } from "file-saver"
 axios.defaults.baseURL = "/"
 const socket = io()
 
-export default function CikisciPanel() {
+export default function CikisciPanel({ defaultSettings }) {
   const [tumListe, setTumListe] = useState([])
   const [seciliIslem, setSeciliIslem] = useState(null)
   const [mesaj, setMesaj] = useState("")
@@ -19,6 +19,9 @@ export default function CikisciPanel() {
   const [bidonEdit, setBidonEdit] = useState("")
   const [bidonSaving, setBidonSaving] = useState(false)
   const textareaRef = useRef(null);
+  
+  // Varsayılan fiyat
+  const defFiyat = defaultSettings?.yag_fiyati || "300"
 
   useEffect(() => {
     if (isEditing && textareaRef.current) {
@@ -37,7 +40,7 @@ export default function CikisciPanel() {
     ad_soyad: "",
     telefon: "",
     satilan_kg: "",
-    birim_fiyat: "300",
+    birim_fiyat: defFiyat,
     bidon_no: "",
     notlar: "",
   })

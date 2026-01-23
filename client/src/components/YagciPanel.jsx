@@ -3,18 +3,23 @@ import axios from "axios"
 
 axios.defaults.baseURL = "/"
 
-export default function YagciPanel() {
+export default function YagciPanel({ defaultSettings }) {
   const [liste, setListe] = useState([])
   const [tumListe, setTumListe] = useState([])
   const [loadingListe, setLoadingListe] = useState(false)
   const [listeHata, setListeHata] = useState("")
   const [secili, setSecili] = useState(null)
   const [showInfo, setShowInfo] = useState(false)
+  
+  // Varsayılanları prop'tan al (yoksa fallback: 8 ve 300)
+  const defOran = defaultSettings?.hak_oran || "8"
+  const defFiyat = defaultSettings?.yag_fiyati || "300"
+
   const [formData, setFormData] = useState({
     zeytin_kg: "",
     cikan_yag: "",
-    hak_oran: "8",
-    yag_fiyati: "300",
+    hak_oran: defOran,
+    yag_fiyati: defFiyat,
     firma_hakki: "",
     firma_hakki_tl: "",
     odeme_tipi: "yag",
