@@ -31,7 +31,6 @@ export default function SettingsModal({ onClose, onSave }) {
     setError("")
     try {
         await axios.put("/api/settings", formData)
-        // Eğer onSave callback'i varsa (parent'a bildirmek için)
         if (onSave) onSave(formData)
         onClose()
     } catch (e) {
