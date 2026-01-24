@@ -157,14 +157,13 @@ const io = new Server(server, { cors: { origin: true, credentials: true } })
 app.get("/api/settings", (req, res) => {
   db.get("SELECT * FROM settings LIMIT 1", [], (err, row) => {
     if (err) return res.status(500).json(err)
-    if (!row) return res.json({ yag_fiyati: 300, hak_oran: 8 }) // Fallback
+    if (!row) return res.json({ yag_fiyati: 300, hak_oran: 8 })
     res.json(row)
   })
 })
 
 app.put("/api/settings", (req, res) => {
   const { yag_fiyati, hak_oran } = req.body
-  // Tek bir satır varsayıyoruz, update veya insert
   db.get("SELECT id FROM settings LIMIT 1", [], (err, row) => {
     if (err) return res.status(500).json(err)
     
@@ -354,10 +353,8 @@ app.put("/api/bidon-iade/:id", (req, res) => {
     if (!row) return res.status(404).json({ msg: "Kayıt bulunamadı" })
     if (row.status !== 3) return res.status(400).json({ msg: "Sadece geçmiş kayıtlarda iade güncellenebilir" })
 
-    const verilen = new Set(parseBidonList(row.bidon_no))
     const gelen = parseBidonList(iade_bidonlar)
-
-    const temiz = gelen.filter((x) => verilen.has(x))
+    const temiz = gelen
     const out = formatBidonList(temiz)
 
     db.run("UPDATE islemler SET iade_bidonlar = ? WHERE id = ?", [out, id], function (err2) {
@@ -395,9 +392,7 @@ app.put("/api/bidon-no/:id", (req, res) => {
     const outBidon = formatBidonList(verilen)
 
     const iade = parseBidonList(row.iade_bidonlar)
-    const verilenSet = new Set(verilen.map(String))
-    const temizIade = iade.filter((x) => verilenSet.has(String(x)))
-    const outIade = formatBidonList(temizIade)
+    const outIade = formatBidonList(iade)
 
     db.run(
       "UPDATE islemler SET bidon_no = ?, iade_bidonlar = ? WHERE id = ?",

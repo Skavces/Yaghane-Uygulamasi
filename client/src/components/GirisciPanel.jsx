@@ -435,6 +435,7 @@ export default function GirisciPanel() {
                             if (!musteriNoAra) return true
                             return String(kayit.musteri_no).startsWith(musteriNoAra)
                           })
+                          .sort((a, b) => new Date(a.created_at) - new Date(b.created_at))
                           .map((kayit) => {
                             const { saat, tarih } = formatTarihSaat(kayit.created_at)
 

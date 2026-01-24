@@ -10,8 +10,6 @@ export default function YagciPanel({ defaultSettings }) {
   const [listeHata, setListeHata] = useState("")
   const [secili, setSecili] = useState(null)
   const [showInfo, setShowInfo] = useState(false)
-  
-  // Varsayılanları prop'tan al (yoksa fallback: 8 ve 300)
   const defOran = defaultSettings?.hak_oran || "8"
   const defFiyat = defaultSettings?.yag_fiyati || "300"
 
@@ -82,69 +80,96 @@ export default function YagciPanel({ defaultSettings }) {
     }))
   }, [secili])
 
-  function yuvarlaHakKG(value) {
-    const alt = Math.floor(value)
-    const ondalik = value - alt
-    return ondalik <= 0.5 ? alt : alt + 1
-  }
-
-  const hesap = useMemo(() => {
-    const kantarYag = parseFloat(formData.cikan_yag) || 0
-    const oran = parseFloat(formData.hak_oran) || 0
-    const fiyat = parseFloat(formData.yag_fiyati) || 0
-    const tahminiBidon = kantarYag > 0 ? Math.ceil(kantarYag / 50) : 0
-    const dara = tahminiBidon * 2
-
+  function calculateValues(vals) {
+    const zeytin = parseFloat(vals.zeytin_kg) || 0
+    const kantarYag = parseFloat(vals.cikan_yag) || 0
+    const oran = parseFloat(vals.hak_oran) || 0
+    const fiyat = parseFloat(vals.yag_fiyati) || 0
+    const odemeTipi = vals.odeme_tipi || "yag"
+    const daraBidonSayisi = kantarYag > 0 ? Math.round(kantarYag / 50) : 0
+    const dara = daraBidonSayisi * 2
     let netYag = kantarYag - dara
     if (netYag < 0) netYag = 0
 
     const hakKGraw = (netYag * oran) / 100
-    const hakKGround = yuvarlaHakKG(hakKGraw)
-
-    const paraTL = (hakKGraw * fiyat).toFixed(0)
+    const hakKGround = Math.round(hakKGraw + Number.EPSILON)
+    const paraTL = (hakKGround * fiyat).toFixed(0)
     const yagTL = (hakKGround * fiyat).toFixed(2)
 
-    return { hakKGraw, hakKGround, paraTL, yagTL, netYag }
-  }, [formData.cikan_yag, formData.hak_oran, formData.yag_fiyati])
+    let firmaHakki, firmaHakkiTL
+    let musteriKalanYag
+
+    if (odemeTipi === "para") {
+      firmaHakki = hakKGround
+      firmaHakkiTL = paraTL
+      musteriKalanYag = netYag
+    } else {
+      firmaHakki = hakKGround
+      firmaHakkiTL = yagTL
+      musteriKalanYag = netYag - hakKGround
+    }
+
+    if (musteriKalanYag < 0) musteriKalanYag = 0
+
+    const verilecekBidon = musteriKalanYag > 0 ? Math.ceil(musteriKalanYag / 50) : 0
+    const randiman = zeytin > 0 && kantarYag > 0 ? (zeytin / kantarYag) : 0
+
+    return {
+      dara,
+      netYag,
+      hakKGraw,
+      hakKGround,
+      paraTL,
+      yagTL,
+      firmaHakki,
+      firmaHakkiTL,
+      musteriKalanYag,
+      verilecekBidon,
+      randiman: randiman.toFixed(1)
+    }
+  }
+
+  const hesap = useMemo(() => {
+    return calculateValues({
+      zeytin_kg: formData.zeytin_kg,
+      cikan_yag: formData.cikan_yag,
+      hak_oran: formData.hak_oran,
+      yag_fiyati: formData.yag_fiyati,
+      odeme_tipi: formData.odeme_tipi
+    })
+  }, [
+    formData.cikan_yag,
+    formData.hak_oran,
+    formData.yag_fiyati,
+    formData.odeme_tipi,
+    formData.zeytin_kg
+  ])
 
   useEffect(() => {
-    const zeytin = parseFloat(formData.zeytin_kg) || 0
-    const kantarYag = parseFloat(formData.cikan_yag) || 0
-    const oran = parseFloat(formData.hak_oran) || 0
-    const fiyat = parseFloat(formData.yag_fiyati) || 0
-    const tahminiBidonSayisi = kantarYag > 0 ? Math.ceil(kantarYag / 50) : 0
-    const toplamDara = tahminiBidonSayisi * 2
-
-    let netYag = kantarYag - toplamDara
-    if (netYag < 0) netYag = 0
-
-    const hakKGraw = (netYag * oran) / 100
-    const hakKGround = yuvarlaHakKG(hakKGraw)
-    const paraTL = (hakKGraw * fiyat).toFixed(0)
-    const yagTL = (hakKGround * fiyat).toFixed(2)
+    const val = calculateValues({
+      zeytin_kg: formData.zeytin_kg,
+      cikan_yag: formData.cikan_yag,
+      hak_oran: formData.hak_oran,
+      yag_fiyati: formData.yag_fiyati,
+      odeme_tipi: formData.odeme_tipi
+    })
 
     setFormData((prev) => {
-      const nextTL = prev.odeme_tipi === "para" ? paraTL : yagTL
-
       if (
-        String(prev.firma_hakki) === String(hakKGround) &&
-        String(prev.firma_hakki_tl) === String(nextTL)
+        String(prev.firma_hakki) === String(val.firmaHakki) &&
+        String(prev.firma_hakki_tl) === String(val.firmaHakkiTL)
       ) {
         return prev
       }
-      return { ...prev, firma_hakki: hakKGround, firma_hakki_tl: nextTL }
+      return { ...prev, firma_hakki: val.firmaHakki, firma_hakki_tl: val.firmaHakkiTL }
     })
 
-    const musteriKalanYag = formData.odeme_tipi === "yag" ? netYag - hakKGround : netYag
-    const verilecekBidon = musteriKalanYag > 0 ? Math.ceil(musteriKalanYag / 50) : 0
-    const randimanHesap = zeytin > 0 && kantarYag > 0 ? zeytin / kantarYag : 0
-
     setHesapSonuc({
-      kalanYag: musteriKalanYag.toFixed(1),
-      bidon52: "0",
-      bidon50: "0",
-      verilecekBidon,
-      randiman: randimanHesap.toFixed(1),
+      kalanYag: val.musteriKalanYag.toFixed(1),
+      bidon52: "0", // Artık kullanılmıyor
+      bidon50: "0", // Artık kullanılmıyor
+      verilecekBidon: val.verilecekBidon,
+      randiman: val.randiman
     })
 
   }, [
@@ -338,8 +363,8 @@ export default function YagciPanel({ defaultSettings }) {
           </div>
         )}
 
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-          <div className="bg-white/80 backdrop-blur-xl rounded-3xl shadow-2xl border border-white/60 p-6 lg:col-span-1 relative overflow-hidden">
+        <div className="grid grid-cols-1 lg:grid-cols-5 gap-6">
+          <div className="bg-white/80 backdrop-blur-xl rounded-3xl shadow-2xl border border-white/60 p-6 lg:col-span-2 relative overflow-hidden">
             <div className="absolute inset-0 bg-gradient-to-br from-emerald-50/50 to-transparent pointer-events-none"></div>
 
             <div className="relative z-10">
@@ -420,7 +445,7 @@ export default function YagciPanel({ defaultSettings }) {
                         }`}
                     >
                       <div>
-                        <p className="font-bold text-slate-800 text-lg">{m.ad_soyad}</p>
+                        <p className="font-bold text-slate-800 text-lg truncate">{m.ad_soyad}</p>
                         <p className="text-lg font-bold text-slate-700 mt-1">
                           {m.telefon ? normalizeTelefon(m.telefon) : "-"}
                         </p>
@@ -437,7 +462,7 @@ export default function YagciPanel({ defaultSettings }) {
             </div>
           </div>
 
-          <div className="lg:col-span-2">
+          <div className="lg:col-span-3">
             {!secili ? (
               <div className="bg-white/80 backdrop-blur-xl rounded-3xl shadow-2xl border border-white/60 p-16 text-center relative overflow-hidden">
                 <div className="absolute inset-0 bg-gradient-to-br from-slate-50/50 to-transparent pointer-events-none"></div>

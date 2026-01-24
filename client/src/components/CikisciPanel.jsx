@@ -14,6 +14,8 @@ export default function CikisciPanel({ defaultSettings }) {
   const [aktifTab, setAktifTab] = useState("bekleyen")
   const [bekleyenMusteriAra, setBekleyenMusteriAra] = useState("")
   const [gecmisTelefonAra, setGecmisTelefonAra] = useState("")
+  const [bidonAdAra, setBidonAdAra] = useState("")
+  const [bidonTelAra, setBidonTelAra] = useState("")
   const [satisModalAcik, setSatisModalAcik] = useState(false)
   const [isEditing, setIsEditing] = useState(false)
   const [bidonEdit, setBidonEdit] = useState("")
@@ -406,6 +408,113 @@ export default function CikisciPanel({ defaultSettings }) {
     )
   }, [seciliIslem])
 
+  const ayniTelefonTumBidonlar = useMemo(() => {
+    if (!seciliIslem?.telefon) return { verilenler: [], iadeler: [], kalanlar: [] }
+    const tel = normalizeTelefon(seciliIslem.telefon)
+    if (!tel) return { verilenler: [], iadeler: [], kalanlar: [] }
+
+    const ilgiliKayitlar = tumListe.filter((x) => {
+      if (x.odeme_tipi === "SATIS") return false
+      return normalizeTelefon(x.telefon) === tel
+    })
+
+    const tumVerilenler = []
+    const tumIadeler = []
+
+    for (const kayit of ilgiliKayitlar) {
+      const verilenList = parseBidonList(kayit.bidon_no)
+      const iadeList = parseBidonList(kayit.iade_bidonlar ?? kayit.geri_alinan_bidonlar ?? "")
+      
+      tumVerilenler.push(...verilenList)
+      tumIadeler.push(...iadeList)
+    }
+
+    const iadeCounts = {}
+    for (const b of tumIadeler) {
+      const s = String(b)
+      iadeCounts[s] = (iadeCounts[s] || 0) + 1
+    }
+
+    const kalanlar = []
+    for (const b of tumVerilenler) {
+      const s = String(b)
+      if (iadeCounts[s] && iadeCounts[s] > 0) {
+        iadeCounts[s]--
+      } else {
+        kalanlar.push(b)
+      }
+    }
+
+    return {
+      verilenler: tumVerilenler,
+      iadeler: tumIadeler,
+      kalanlar: kalanlar
+    }
+  }, [tumListe, seciliIslem])
+
+  const bidonListesi = useMemo(() => {
+    const map = {}
+
+    for (const item of tumListe) {
+      if (item.odeme_tipi === "SATIS") continue
+      if (!item.telefon) continue
+
+      const tel = normalizeTelefon(item.telefon)
+      if (!tel) continue
+
+      if (!map[tel]) {
+        map[tel] = {
+          ad_soyad: item.ad_soyad,
+          telefon: tel,
+          verilenToplam: 0,
+          iadeToplam: 0,
+          kalanToplam: 0
+        }
+      }
+
+      if (item.ad_soyad) map[tel].ad_soyad = item.ad_soyad
+
+      const verilenAdet = parseBidonList(item.bidon_no).length
+      const iadeAdet = parseBidonList(item.iade_bidonlar ?? item.geri_alinan_bidonlar ?? "").length
+
+      map[tel].verilenToplam += verilenAdet
+      map[tel].iadeToplam += iadeAdet
+    }
+
+    Object.values(map).forEach(r => {
+      r.kalanToplam = r.verilenToplam - r.iadeToplam
+    })
+
+    let liste = Object.values(map)
+
+    if (bidonAdAra) {
+      const q = bidonAdAra.toLocaleUpperCase("tr-TR")
+      liste = liste.filter(x => (x.ad_soyad || "").toLocaleUpperCase("tr-TR").includes(q))
+    }
+
+    if (bidonTelAra) {
+      const q = bidonTelAra.replace(/\D/g, "")
+      liste = liste.filter(x => x.telefon.replaceAll(" ", "").includes(q))
+    }
+
+    liste.sort((a, b) => (a.ad_soyad || "").localeCompare(b.ad_soyad || ""))
+
+    return liste
+  }, [tumListe, bidonAdAra, bidonTelAra])
+
+  const bidonIstatistikleri = useMemo(() => {
+    let toplamVerilen = 0
+    let toplamIade = 0
+    let toplamKalan = 0
+
+    for (const k of bidonListesi) {
+      toplamVerilen += k.verilenToplam
+      toplamIade += k.iadeToplam
+      toplamKalan += k.kalanToplam
+    }
+    return { toplamVerilen, toplamIade, toplamKalan }
+  }, [bidonListesi])
+
   const openIadeModal = () => {
     if (!seciliIslem) return
     setIadeAdet("")
@@ -456,13 +565,8 @@ export default function CikisciPanel({ defaultSettings }) {
     if (!seciliIslem) return
 
     try {
-      const verilen = parseBidonList(seciliIslem.bidon_no)
       const mevcutIade = parseBidonList(seciliIslem.iade_bidonlar ?? seciliIslem.geri_alinan_bidonlar ?? "")
-
-      const kalan = bidonKalanHesapla(
-        seciliIslem.bidon_no ?? "",
-        seciliIslem.iade_bidonlar ?? seciliIslem.geri_alinan_bidonlar ?? ""
-      )
+      const kalan = ayniTelefonTumBidonlar.kalanlar
 
       let adet = parseInt(String(iadeAdet || "").replace(/\D/g, ""), 10)
       if (!Number.isFinite(adet) || adet <= 0) {
@@ -474,8 +578,7 @@ export default function CikisciPanel({ defaultSettings }) {
 
       const eklenecek = kalan.slice(0, adet)
       const yeniIadeSet = new Set([...mevcutIade.map(String), ...eklenecek.map(String)])
-      const verilenSet = new Set(verilen.map(String))
-      const temizYeniIade = Array.from(yeniIadeSet).filter((x) => verilenSet.has(String(x)))
+      const temizYeniIade = Array.from(yeniIadeSet)
       const payload = { iade_bidonlar: formatBidonList(temizYeniIade) }
 
       await axios.put(`/api/bidon-iade/${seciliIslem.id}`, payload)
@@ -544,18 +647,21 @@ export default function CikisciPanel({ defaultSettings }) {
             </div>
 
             <div className="p-6 space-y-4">
-              <div className="grid grid-cols-3 gap-3">
-                <div className="p-4 rounded-2xl border-2 border-slate-200 bg-white">
-                  <p className="text-xs font-black text-slate-400 uppercase">Verilen</p>
-                  <p className="text-2xl font-black text-slate-800">{seciliVerilenBidonlar.length} ADET</p>
-                </div>
-                <div className="p-4 rounded-2xl border-2 border-emerald-300 bg-emerald-50">
-                  <p className="text-xs font-black text-emerald-700 uppercase">İade Alınan</p>
-                  <p className="text-2xl font-black text-emerald-800">{seciliIadeBidonlar.length} ADET</p>
-                </div>
-                <div className="p-4 rounded-2xl border-2 border-amber-300 bg-amber-50">
-                  <p className="text-xs font-black text-amber-700 uppercase">Müşteride Kalan</p>
-                  <p className="text-2xl font-black text-amber-900">{seciliKalanBidonlar.length} ADET</p>
+              <div>
+                <p className="text-sm font-bold text-emerald-700 mb-3">{normalizeTelefon(seciliIslem.telefon)} Numaralı Müşterinin Tüm Bidonları:</p>
+                <div className="grid grid-cols-3 gap-3">
+                  <div className="p-4 rounded-2xl border-2 border-slate-300 bg-slate-50">
+                    <p className="text-xs font-black text-slate-500 uppercase">Verilen</p>
+                    <p className="text-2xl font-black text-slate-800">{ayniTelefonTumBidonlar.verilenler.length} ADET</p>
+                  </div>
+                  <div className="p-4 rounded-2xl border-2 border-emerald-400 bg-emerald-100">
+                    <p className="text-xs font-black text-emerald-800 uppercase">İade Alınan</p>
+                    <p className="text-2xl font-black text-emerald-900">{ayniTelefonTumBidonlar.iadeler.length} ADET</p>
+                  </div>
+                  <div className="p-4 rounded-2xl border-2 border-amber-400 bg-amber-100">
+                    <p className="text-xs font-black text-amber-800 uppercase">Müşteride Kalan</p>
+                    <p className="text-2xl font-black text-amber-900">{ayniTelefonTumBidonlar.kalanlar.length} ADET</p>
+                  </div>
                 </div>
               </div>
 
@@ -694,7 +800,7 @@ export default function CikisciPanel({ defaultSettings }) {
         </div>
       )}
 
-      <div className="w-1/2 bg-white/80 backdrop-blur-xl border-r-2 border-white/60 flex flex-col h-full shadow-2xl z-10 relative">
+      <div className={`${aktifTab === "bidonlar" ? "w-1/4" : "w-1/2"} bg-white/80 backdrop-blur-xl border-r-2 border-white/60 flex flex-col h-full shadow-2xl z-10 relative transition-all duration-300`}>
         <div className="p-6 border-b-2 border-slate-100">
           <h2 className="text-3xl font-black text-transparent bg-clip-text bg-gradient-to-r from-emerald-600 via-emerald-700 to-emerald-800 mb-4 text-center tracking-tight">
             Çıkış Paneli
@@ -742,8 +848,24 @@ export default function CikisciPanel({ defaultSettings }) {
             >
               Geçmiş
             </button>
+            <button
+              onClick={() => {
+                setAktifTab("bidonlar")
+                setSeciliIslem(null)
+                setGecmisTelefonAra("")
+                setBekleyenMusteriAra("")
+              }}
+              className={`flex-1 py-3.5 text-md font-bold rounded-xl transition-all duration-200 ${aktifTab === "bidonlar"
+                ? "bg-gradient-to-r from-violet-500 to-violet-600 text-white shadow-lg shadow-violet-500/40 ring-2 ring-violet-400/50"
+                : "text-slate-400 hover:text-slate-600 hover:bg-slate-50"
+                }`}
+            >
+              Bidonlar
+            </button>
           </div>
         </div>
+
+
 
         {aktifTab === "bekleyen" && (
           <div className="px-6 pt-3 space-y-3">
@@ -808,7 +930,7 @@ export default function CikisciPanel({ defaultSettings }) {
         )}
 
         <div className="flex-1 overflow-y-auto p-4 space-y-3 bg-gradient-to-b from-transparent to-slate-50/30">
-          {gosterilecekListe.length === 0 ? (
+          {aktifTab === "bidonlar" ? null : gosterilecekListe.length === 0 ? (
             <div className="flex flex-col items-center justify-center h-48 text-slate-400">
               <p className="text-sm font-medium opacity-60">Kayıt bulunamadı.</p>
             </div>
@@ -881,7 +1003,7 @@ export default function CikisciPanel({ defaultSettings }) {
         </div>
       </div>
 
-      <div className="w-1/2 flex flex-col h-full overflow-hidden relative">
+      <div className={`${aktifTab === "bidonlar" ? "w-3/4" : "w-1/2"} flex flex-col h-full overflow-hidden relative transition-all duration-300`}>
         {mesaj && (
           <div className="fixed top-6 left-1/2 transform -translate-x-1/2 z-[9999]">
             <div className="bg-gradient-to-r from-emerald-600 to-emerald-700 text-white px-6 py-4 rounded-2xl shadow-2xl flex items-center gap-3 border-2 border-emerald-400/30 backdrop-blur-sm">
@@ -891,7 +1013,95 @@ export default function CikisciPanel({ defaultSettings }) {
         )}
 
         {!seciliIslem ? (
-          <div className="flex-1 flex items-center justify-center text-slate-400 font-semibold text-lg">Seçim yapın...</div>
+          aktifTab === "bidonlar" ? (
+            <div className="flex-1 p-8 overflow-y-auto">
+              <div className="max-w-4xl mx-auto space-y-10 py-4">
+                <div className="text-center">
+                  <h2 className="text-5xl font-black text-slate-800 mb-3">Bidon İstatistikleri</h2>
+                  <p className="text-lg text-slate-500 font-medium">Tüm müşterilerin toplam bidon durumları</p>
+                </div>
+
+                <div className="grid grid-cols-3 gap-6">
+                  <div className="bg-white p-8 rounded-3xl border-2 border-slate-200 text-center shadow-lg">
+                    <div className="text-sm font-black text-slate-400 uppercase tracking-wider mb-3">TOPLAM VERİLEN</div>
+                    <div className="text-6xl font-black text-slate-800">{bidonIstatistikleri.toplamVerilen}</div>
+                  </div>
+                  <div className="bg-emerald-50 p-8 rounded-3xl border-2 border-emerald-200 text-center shadow-lg shadow-emerald-100">
+                    <div className="text-sm font-black text-emerald-600 uppercase tracking-wider mb-3">TOPLAM İADE</div>
+                    <div className="text-6xl font-black text-emerald-700">{bidonIstatistikleri.toplamIade}</div>
+                  </div>
+                  <div className="bg-amber-50 p-8 rounded-3xl border-2 border-amber-200 text-center shadow-lg shadow-amber-100">
+                    <div className="text-sm font-black text-amber-600 uppercase tracking-wider mb-3">MÜŞTERİDE KALAN</div>
+                    <div className="text-6xl font-black text-amber-700">{bidonIstatistikleri.toplamKalan}</div>
+                  </div>
+                </div>
+
+                <div className="bg-white/60 backdrop-blur-xl p-10 rounded-3xl border-2 border-slate-200 shadow-xl space-y-8">
+                  <h3 className="text-2xl font-black text-slate-700 border-b-2 border-slate-100 pb-4">Müşteri Arama</h3>
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+                    <div className="space-y-3">
+                      <label className="block text-base font-bold text-slate-500 uppercase">İsim Soyisim</label>
+                      <input
+                        value={bidonAdAra}
+                        onChange={(e) => setBidonAdAra(e.target.value)}
+                        placeholder="İsim ile ara..."
+                        className="w-full px-6 py-5 bg-white border-2 border-slate-200 rounded-2xl text-xl font-bold text-slate-800 focus:outline-none focus:border-violet-500 focus:ring-4 focus:ring-violet-500/10 transition-all shadow-sm"
+                      />
+                    </div>
+                    <div className="space-y-3">
+                      <label className="block text-base font-bold text-slate-500 uppercase">Telefon Numarası</label>
+                      <input
+                        value={bidonTelAra}
+                        onChange={(e) => setBidonTelAra(e.target.value)}
+                        placeholder="Telefon ile ara..."
+                        className="w-full px-6 py-5 bg-white border-2 border-slate-200 rounded-2xl text-xl font-bold text-slate-800 focus:outline-none focus:border-violet-500 focus:ring-4 focus:ring-violet-500/10 transition-all shadow-sm"
+                      />
+                    </div>
+                  </div>
+                </div>
+
+                <div className="space-y-6">
+                  <h3 className="text-2xl font-black text-slate-700 px-2">Sonuçlar ({bidonListesi.length})</h3>
+                  {bidonListesi.length === 0 ? (
+                    <div className="text-center py-12 text-xl text-slate-400 font-bold bg-white/40 rounded-3xl border-2 border-dashed border-slate-200">
+                      Kayıt bulunamadı.
+                    </div>
+                  ) : (
+                    <div className="grid grid-cols-1 gap-5">
+                      {bidonListesi.map((item, idx) => (
+                        <div
+                          key={item.telefon + idx}
+                          className="bg-white p-6 rounded-2xl border-2 border-slate-200 shadow-sm hover:shadow-lg transition-all flex justify-between items-center"
+                        >
+                          <div>
+                            <h4 className="text-2xl font-black text-slate-800">{item.ad_soyad}</h4>
+                            <p className="text-lg font-bold text-slate-500">{item.telefon}</p>
+                          </div>
+
+                          <div className="flex gap-10 text-center">
+                            <div>
+                              <div className="text-xs font-bold text-slate-400 uppercase mb-1">VERİLEN</div>
+                              <div className="text-3xl font-black text-slate-700">{item.verilenToplam}</div>
+                            </div>
+                            <div>
+                              <div className="text-xs font-bold text-emerald-600 uppercase mb-1">İADE</div>
+                              <div className="text-3xl font-black text-emerald-700">{item.iadeToplam}</div>
+                            </div>
+                            <div>
+                              <div className="text-xs font-bold text-amber-600 uppercase mb-1">KALAN</div>
+                              <div className="text-3xl font-black text-amber-700">{item.kalanToplam}</div>
+                            </div>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                </div>
+              </div>
+            </div>
+          ) : (
+            <div className="flex-1 flex items-center justify-center text-slate-400 font-semibold text-lg">Seçim yapın...</div>
+          )
         ) : (
           <div className="flex-1 overflow-y-auto p-8">
             <div className="max-w-4xl mx-auto space-y-6">
@@ -1106,26 +1316,28 @@ export default function CikisciPanel({ defaultSettings }) {
 
               {seciliIslem.status === 3 && (
                 <>
-                  <div className="grid grid-cols-3 gap-3">
-                    <div className="p-4 rounded-2xl border-2 border-slate-200 bg-white">
-                      <p className="text-xs font-black text-slate-400 uppercase">Verilen</p>
-                      <p className="text-2xl font-black text-slate-800">{seciliVerilenBidonlar.length} ADET</p>
-                    </div>
-                    <div className="p-4 rounded-2xl border-2 border-emerald-300 bg-emerald-50">
-                      <p className="text-xs font-black text-emerald-700 uppercase">İade Alınan</p>
-                      <p className="text-2xl font-black text-emerald-800">{seciliIadeBidonlar.length} ADET</p>
-                    </div>
-                    <div className="p-4 rounded-2xl border-2 border-amber-300 bg-amber-50">
-                      <p className="text-xs font-black text-amber-700 uppercase">Müşteride Kalan</p>
-                      <p className="text-2xl font-black text-amber-900">{seciliKalanBidonlar.length} ADET</p>
+                  <div>
+                    <p className="text-sm font-bold text-emerald-700 mb-3">{normalizeTelefon(seciliIslem.telefon)} Numaralı Müşterinin Tüm Bidonları:</p>
+                    <div className="grid grid-cols-3 gap-3">
+                      <div className="p-4 rounded-2xl border-2 border-slate-300 bg-slate-50">
+                        <p className="text-xs font-black text-slate-500 uppercase">Verilen</p>
+                        <p className="text-2xl font-black text-slate-800">{ayniTelefonTumBidonlar.verilenler.length} ADET</p>
+                      </div>
+                      <div className="p-4 rounded-2xl border-2 border-emerald-400 bg-emerald-100">
+                        <p className="text-xs font-black text-emerald-800 uppercase">İade Alınan</p>
+                        <p className="text-2xl font-black text-emerald-900">{ayniTelefonTumBidonlar.iadeler.length} ADET</p>
+                      </div>
+                      <div className="p-4 rounded-2xl border-2 border-amber-400 bg-amber-100">
+                        <p className="text-xs font-black text-amber-800 uppercase">Müşteride Kalan</p>
+                        <p className="text-2xl font-black text-amber-900">{ayniTelefonTumBidonlar.kalanlar.length} ADET</p>
+                      </div>
                     </div>
                   </div>
 
                   <button
                     type="button"
                     onClick={openIadeModal}
-                    className="w-full p-4 rounded-2xl border-2 border-emerald-300 bg-emerald-50 hover:bg-emerald-100 transition-all font-black text-emerald-800"
-                  >
+                    className="w-full p-4 rounded-2xl border-2 border-emerald-300 bg-emerald-50 hover:bg-emerald-100 transition-all font-black text-emerald-800">
                     Bidon İadesi Ekle
                   </button>
                 </>
