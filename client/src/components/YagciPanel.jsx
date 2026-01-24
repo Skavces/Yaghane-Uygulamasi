@@ -20,7 +20,7 @@ export default function YagciPanel({ defaultSettings }) {
     yag_fiyati: defFiyat,
     firma_hakki: "",
     firma_hakki_tl: "",
-    odeme_tipi: "yag",
+    odeme_tipi: "para",
     bidon_no: "",
     notlar: "",
   })
@@ -72,7 +72,7 @@ export default function YagciPanel({ defaultSettings }) {
       ...prev,
       zeytin_kg: secili.zeytin_kg || "",
       cikan_yag: "",
-      odeme_tipi: "yag",
+      odeme_tipi: "para",
       bidon_no: "",
       notlar: "",
       firma_hakki: "",
@@ -166,8 +166,8 @@ export default function YagciPanel({ defaultSettings }) {
 
     setHesapSonuc({
       kalanYag: val.musteriKalanYag.toFixed(1),
-      bidon52: "0", // Artık kullanılmıyor
-      bidon50: "0", // Artık kullanılmıyor
+      bidon52: "0",
+      bidon50: "0", 
       verilecekBidon: val.verilecekBidon,
       randiman: val.randiman
     })

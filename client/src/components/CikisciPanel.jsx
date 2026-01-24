@@ -21,8 +21,6 @@ export default function CikisciPanel({ defaultSettings }) {
   const [bidonEdit, setBidonEdit] = useState("")
   const [bidonSaving, setBidonSaving] = useState(false)
   const textareaRef = useRef(null);
-  
-  // Varsayılan fiyat
   const defFiyat = defaultSettings?.yag_fiyati || "300"
 
   useEffect(() => {
@@ -92,8 +90,21 @@ export default function CikisciPanel({ defaultSettings }) {
 
   const bidonKalanHesapla = (verilenStr, iadeStr) => {
     const verilen = parseBidonList(verilenStr)
-    const iade = new Set(parseBidonList(iadeStr))
-    return verilen.filter((x) => !iade.has(x))
+    const iadeArr = parseBidonList(iadeStr)
+    const iadeCounts = {}
+    for (const b of iadeArr) {
+      iadeCounts[b] = (iadeCounts[b] || 0) + 1
+    }
+
+    const kalan = []
+    for (const b of verilen) {
+      if (iadeCounts[b] > 0) {
+        iadeCounts[b]--
+      } else {
+        kalan.push(b)
+      }
+    }
+    return kalan
   }
 
   const handleSatisInput = (e) => {
@@ -197,39 +208,59 @@ export default function CikisciPanel({ defaultSettings }) {
       .sort((a, b) => new Date(b.finished_at || b.created_at) - new Date(a.finished_at || a.created_at))
   }, [tumListe, aktifTab, gecmisTelefonAra, bekleyenMusteriAra])
 
+  const calculateYagIslemi = (islem) => {
+    if (!islem) return null
+
+    const cikan = parseFloat(islem.cikan_yag) || 0
+    const zeytin = parseFloat(islem.zeytin_kg) || 0
+    const oran = parseFloat(islem.hak_oran) || 0
+    const fiyat = parseFloat(islem.yag_fiyati) || 0
+    const daraBidonSayisi = Math.round(cikan / 50)
+    const dara = daraBidonSayisi * 2
+    const netYag = Math.max(0, cikan - dara)
+    const hakRaw = (netYag * oran) / 100
+    const hak = Math.round(hakRaw) // 0.5 ve üstü yukarı
+    const hakBedeliTL = (hak * fiyat).toFixed(0)
+
+    let musteriKalan = 0
+    if (islem.odeme_tipi === "yag") {
+       musteriKalan = netYag - hak
+    } else {
+       musteriKalan = netYag
+    }
+
+    const verilecekBidon = Math.ceil(musteriKalan / 50)
+    
+    let randiman = 0
+    if (zeytin > 0 && cikan > 0) {
+       randiman = (cikan / zeytin) * 100
+    }
+
+    return {
+      cikan,
+      zeytin,
+      dara,
+      netYag,
+      hak,
+      hakBedeliTL,
+      musteriKalan,
+      verilecekBidon,
+      randiman: randiman.toFixed(1)
+    }
+  }
+
   const verileriHazirla = (islem) => {
     if (islem.odeme_tipi === "SATIS") {
       return { kalanYag: islem.cikan_yag, tutar: islem.firma_hakki_tl, fiyat: islem.yag_fiyati }
     }
-
-    let kalan = 0
-    if (islem.odeme_tipi === "yag") {
-      kalan = (parseFloat(islem.cikan_yag) || 0) - (parseFloat(islem.firma_hakki) || 0)
-    } else {
-      kalan = parseFloat(islem.cikan_yag) || 0
-    }
-
-    let b52 = 0
-    let b50 = 0
-    if (kalan > 0) {
-      b52 = kalan / 52
-      b50 = kalan / 50
-    }
-
-    let verilecekBidon = 0
-    if (kalan > 0) verilecekBidon = Math.ceil(kalan / 52)
-
-    const zeytin = parseFloat(islem.zeytin_kg) || 0
-    const cikan = parseFloat(islem.cikan_yag) || 0
-    let rand = 0
-    if (zeytin > 0 && cikan > 0) rand = zeytin / cikan
+    
+    const hesap = calculateYagIslemi(islem)
+    if (!hesap) return {}
 
     return {
-      kalanYag: kalan.toFixed(1),
-      bidon52: b52.toFixed(2),
-      bidon50: b50.toFixed(2),
-      verilecekBidon,
-      randiman: rand.toFixed(1),
+      kalanYag: hesap.musteriKalan.toFixed(1),
+      verilecekBidon: hesap.verilecekBidon,
+      randiman: hesap.randiman,
       firmaHakki: islem.firma_hakki ?? 0,
       firmaHakkiTL: islem.firma_hakki_tl ?? 0,
     }
@@ -348,26 +379,14 @@ export default function CikisciPanel({ defaultSettings }) {
 
   const hesapDetay = useMemo(() => {
     if (!seciliIslem) return { hakKGround: 0, paraTL: "0.00" }
+    
+    const hesap = calculateYagIslemi(seciliIslem)
+    if (!hesap) return { hakKGround: 0, paraTL: "0.00" }
 
-    const kantarYag = parseFloat(seciliIslem.cikan_yag) || 0
-    const oran = parseFloat(seciliIslem.hak_oran) || 0
-    const fiyat = parseFloat(seciliIslem.yag_fiyati) || 0
-
-    const tahminiBidon = kantarYag > 0 ? Math.ceil(kantarYag / 50) : 0
-    const dara = tahminiBidon * 2
-
-    let netYag = kantarYag - dara
-    if (netYag < 0) netYag = 0
-
-    const hakKGraw = (netYag * oran) / 100
-
-    const alt = Math.floor(hakKGraw)
-    const ondalik = hakKGraw - alt
-    const hakKGround = ondalik <= 0.5 ? alt : alt + 1
-
-    const paraTL = (hakKGraw * fiyat).toFixed(0)
-
-    return { hakKGround, paraTL }
+    return { 
+      hakKGround: hesap.hak, 
+      paraTL: hesap.hakBedeliTL 
+    }
   }, [seciliIslem])
 
   const bidonOzetAyniTelefon = useMemo(() => {
@@ -457,6 +476,7 @@ export default function CikisciPanel({ defaultSettings }) {
 
     for (const item of tumListe) {
       if (item.odeme_tipi === "SATIS") continue
+      if (item.status !== 3) continue
       if (!item.telefon) continue
 
       const tel = normalizeTelefon(item.telefon)
@@ -464,7 +484,8 @@ export default function CikisciPanel({ defaultSettings }) {
 
       if (!map[tel]) {
         map[tel] = {
-          ad_soyad: item.ad_soyad,
+          names: new Set(),
+          ad_soyad: "",
           telefon: tel,
           verilenToplam: 0,
           iadeToplam: 0,
@@ -472,7 +493,7 @@ export default function CikisciPanel({ defaultSettings }) {
         }
       }
 
-      if (item.ad_soyad) map[tel].ad_soyad = item.ad_soyad
+      if (item.ad_soyad) map[tel].names.add(item.ad_soyad.trim())
 
       const verilenAdet = parseBidonList(item.bidon_no).length
       const iadeAdet = parseBidonList(item.iade_bidonlar ?? item.geri_alinan_bidonlar ?? "").length
@@ -482,6 +503,8 @@ export default function CikisciPanel({ defaultSettings }) {
     }
 
     Object.values(map).forEach(r => {
+      r.ad_soyad = Array.from(r.names).join(" / ")
+      delete r.names
       r.kalanToplam = r.verilenToplam - r.iadeToplam
     })
 
@@ -562,6 +585,7 @@ export default function CikisciPanel({ defaultSettings }) {
   }
 
   const handleIadeKaydet = async () => {
+
     if (!seciliIslem) return
 
     try {
@@ -577,9 +601,8 @@ export default function CikisciPanel({ defaultSettings }) {
       if (adet > kalan.length) adet = kalan.length
 
       const eklenecek = kalan.slice(0, adet)
-      const yeniIadeSet = new Set([...mevcutIade.map(String), ...eklenecek.map(String)])
-      const temizYeniIade = Array.from(yeniIadeSet)
-      const payload = { iade_bidonlar: formatBidonList(temizYeniIade) }
+      const yeniIadeList = [...mevcutIade.map(String), ...eklenecek.map(String)]
+      const payload = { iade_bidonlar: formatBidonList(yeniIadeList) }
 
       await axios.put(`/api/bidon-iade/${seciliIslem.id}`, payload)
 
@@ -767,7 +790,7 @@ export default function CikisciPanel({ defaultSettings }) {
                   <span className="text-xs font-bold text-slate-500 bg-slate-100 px-3 py-1.5 rounded-xl border-2 border-slate-200">
                     Verilecek Bidon:{" "}
                     <span className="text-slate-900 text-sm font-black">
-                      {Math.ceil((parseFloat(satisForm.satilan_kg) || 0) / 52)}
+                      {Math.ceil((parseFloat(satisForm.satilan_kg) || 0) / 50)}
                     </span>{" "}
                     Adet
                   </span>
@@ -1031,7 +1054,7 @@ export default function CikisciPanel({ defaultSettings }) {
                     <div className="text-6xl font-black text-emerald-700">{bidonIstatistikleri.toplamIade}</div>
                   </div>
                   <div className="bg-amber-50 p-8 rounded-3xl border-2 border-amber-200 text-center shadow-lg shadow-amber-100">
-                    <div className="text-sm font-black text-amber-600 uppercase tracking-wider mb-3">MÜŞTERİDE KALAN</div>
+                    <div className="text-sm font-black text-amber-600 uppercase tracking-wider mb-3">MÜŞTERİLERDE KALAN</div>
                     <div className="text-6xl font-black text-amber-700">{bidonIstatistikleri.toplamKalan}</div>
                   </div>
                 </div>
@@ -1071,14 +1094,16 @@ export default function CikisciPanel({ defaultSettings }) {
                       {bidonListesi.map((item, idx) => (
                         <div
                           key={item.telefon + idx}
-                          className="bg-white p-6 rounded-2xl border-2 border-slate-200 shadow-sm hover:shadow-lg transition-all flex justify-between items-center"
+                          className="bg-white p-8 rounded-2xl border-2 border-slate-200 shadow-sm hover:shadow-lg transition-all flex justify-between items-start"
                         >
-                          <div>
-                            <h4 className="text-2xl font-black text-slate-800">{item.ad_soyad}</h4>
-                            <p className="text-lg font-bold text-slate-500">{item.telefon}</p>
+                          <div className="flex flex-col gap-1">
+                            {item.ad_soyad.split(" / ").map((name, i) => (
+                               <h4 key={i} className="text-2xl font-black text-slate-800 leading-tight">{name}</h4>
+                            ))}
+                            <p className="text-lg font-bold text-slate-500 mt-2">{item.telefon}</p>
                           </div>
 
-                          <div className="flex gap-10 text-center">
+                          <div className="flex gap-10 text-center self-center">
                             <div>
                               <div className="text-xs font-bold text-slate-400 uppercase mb-1">VERİLEN</div>
                               <div className="text-3xl font-black text-slate-700">{item.verilenToplam}</div>

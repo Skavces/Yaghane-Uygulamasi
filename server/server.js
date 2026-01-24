@@ -50,12 +50,12 @@ function parseBidonList(str) {
     .split("-")
     .map((x) => x.trim())
     .filter(Boolean)
-  return Array.from(new Set(parts))
+  return parts
 }
 
 function formatBidonList(arr) {
   const a = (arr || []).map((x) => String(x).trim()).filter(Boolean)
-  return Array.from(new Set(a)).join("-")
+  return a.join("-")
 }
 
 db.serialize(() => {
