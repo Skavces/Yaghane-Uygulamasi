@@ -118,7 +118,6 @@ db.serialize(() => {
     (err) => {
       if (err) console.error("Settings tablosu oluşturma hatası:", err.message)
       else {
-         // Varsayılan ayar yoksa ekle
          db.get("SELECT count(*) as count FROM settings", [], (err, row) => {
             if(err) return;
             if(row && row.count === 0) {

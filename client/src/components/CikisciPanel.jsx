@@ -636,6 +636,82 @@ export default function CikisciPanel({ defaultSettings }) {
     }
   }
 
+  const handleBidonExcelIndir = () => {
+    try {
+      const rows = bidonListesi.map((x) => ({
+        "AD SOYAD": x.ad_soyad.replaceAll(" / ", "\n"),
+        "TELEFON": x.telefon,
+        "VERİLEN TOPLAM": x.verilenToplam,
+        "İADE TOPLAM": x.iadeToplam,
+        "KALAN TOPLAM": x.kalanToplam,
+      }))
+
+      // Add Summary Row
+      rows.push({
+        "AD SOYAD": "GENEL TOPLAM",
+        "TELEFON": "",
+        "VERİLEN TOPLAM": bidonIstatistikleri.toplamVerilen,
+        "İADE TOPLAM": bidonIstatistikleri.toplamIade,
+        "KALAN TOPLAM": bidonIstatistikleri.toplamKalan,
+      })
+
+      const ws = XLSX.utils.json_to_sheet(rows)
+      const range = XLSX.utils.decode_range(ws['!ref'])
+      
+      for (let R = range.s.r; R <= range.e.r; ++R) {
+        for (let C = range.s.c; C <= range.e.c; ++C) {
+          const address = XLSX.utils.encode_cell({ r: R, c: C })
+          if (!ws[address]) continue
+
+          const isHeader = R === 0
+          const isTotal = R === range.e.r
+
+          ws[address].s = {
+            font: { 
+              sz: isTotal ? 14 : 12, 
+              bold: isHeader || isTotal, 
+              color: { rgb: "000000" } 
+            },
+            alignment: { horizontal: "center", vertical: "center", wrapText: true },
+            fill: { 
+              fgColor: { rgb: isHeader ? "6EE7B7" : isTotal ? "FDBA74" : "F0FDF4" } 
+            },
+            border: {
+              top: { style: "thin", color: { rgb: "000000" } },
+              bottom: { style: "thin", color: { rgb: "000000" } },
+              left: { style: "thin", color: { rgb: "000000" } },
+              right: { style: "thin", color: { rgb: "000000" } }
+            }
+          }
+        }
+      }
+
+      if (rows.length > 0) {
+        const keys = Object.keys(rows[0])
+        ws["!cols"] = keys.map((key) => {
+          let maxLen = key.length
+          rows.forEach((row) => {
+            const val = row[key] ? String(row[key]) : ""
+            if (val.length > maxLen) maxLen = val.length
+          })
+          return { wch: maxLen + 5 }
+        })
+      }
+
+      const wb = XLSX.utils.book_new()
+      XLSX.utils.book_append_sheet(wb, ws, "BidonTakip")
+      const wbout = XLSX.write(wb, { bookType: "xlsx", type: "array" })
+      const blob = new Blob([wbout], { type: "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet" })
+
+      const today = new Date()
+      const fileName = `bidon_takip_${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, "0")}-${String(today.getDate()).padStart(2, "0")}.xlsx`
+      saveAs(blob, fileName)
+    } catch (err) {
+      console.error(err)
+      alert("Excel oluşturulurken hata oluştu.")
+    }
+  }
+
   return (
     <div className="flex h-screen bg-gradient-to-br from-emerald-50 via-white to-amber-50 overflow-hidden font-sans relative">
       <div className="absolute inset-0 opacity-[0.03] pointer-events-none">
@@ -836,9 +912,10 @@ export default function CikisciPanel({ defaultSettings }) {
           </button>
           <button
             onClick={handleExcelIndir}
-            className="w-full mt-4 py-4 bg-gradient-to-r from-emerald-500 to-emerald-600 hover:from-emerald-600 hover:to-emerald-700 text-white font-bold rounded-2xl shadow-lg shadow-emerald-500/30 hover:shadow-emerald-500/50 transition-all transform hover:scale-[1.02] active:scale-[0.98] flex items-center justify-center gap-2 text-sm"
+            className="w-full mt-4 py-4 bg-gradient-to-r from-emerald-500 to-emerald-600 hover:from-emerald-600 hover:to-emerald-700 text-white font-bold rounded-2xl shadow-lg shadow-emerald-500/30 hover:shadow-emerald-500/50 transition-all transform hover:scale-[1.01] active:scale-[0.99] transition-all flex items-center justify-center gap-2 group"
           >
-            Geçmiş Kayıtları İndir
+            <svg className="w-6 h-6 group-hover:animate-bounce" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" /></svg>
+            <span>Geçmiş Kayıtları İndir</span>
           </button>
         </div>
 
@@ -1058,6 +1135,14 @@ export default function CikisciPanel({ defaultSettings }) {
                     <div className="text-6xl font-black text-amber-700">{bidonIstatistikleri.toplamKalan}</div>
                   </div>
                 </div>
+
+                <button
+                  onClick={handleBidonExcelIndir}
+                  className="w-full py-4 bg-gradient-to-r from-emerald-500 to-emerald-600 hover:from-emerald-600 hover:to-emerald-700 text-white font-black text-xl rounded-2xl shadow-lg shadow-emerald-500/30 hover:shadow-emerald-500/50 transform hover:scale-[1.01] active:scale-[0.99] transition-all flex items-center justify-center gap-3 group"
+                >
+                  <svg className="w-8 h-8 group-hover:animate-bounce" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" /></svg>
+                  <span>Kayıtları excel olarak indir</span>
+                </button>
 
                 <div className="bg-white/60 backdrop-blur-xl p-10 rounded-3xl border-2 border-slate-200 shadow-xl space-y-8">
                   <h3 className="text-2xl font-black text-slate-700 border-b-2 border-slate-100 pb-4">Müşteri Arama</h3>
