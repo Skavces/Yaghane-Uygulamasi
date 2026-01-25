@@ -13,6 +13,7 @@ export default function GirisciPanel() {
     ad_soyad: "",
     telefon: "",
     giris_durum: "sikilacak",
+    odeme_tipi: "yag",
   })
   const [kayitlar, setKayitlar] = useState([])
   const [mesaj, setMesaj] = useState("")
@@ -48,7 +49,7 @@ export default function GirisciPanel() {
           : "Müşteri kaydedildi (Sıkılacak)"
       )
       setMesajTipi("success")
-      setFormData({ musteri_no: "", ad_soyad: "", telefon: "", giris_durum: "sikilacak" })
+      setFormData({ musteri_no: "", ad_soyad: "", telefon: "", giris_durum: "sikilacak", odeme_tipi: "yag" })
       setTimeout(() => setMesaj(""), 3000)
     } catch (error) {
       setMesajTipi("error")
@@ -319,6 +320,46 @@ export default function GirisciPanel() {
                     </div>
                   </div>
 
+                  <div>
+                    <label className="block text-sm font-bold text-slate-700 mb-3 uppercase tracking-wide">
+                      Ödeme Yöntemi
+                    </label>
+
+                    <div className="grid grid-cols-2 gap-3">
+                      <button
+                        type="button"
+                        onClick={() =>
+                          setFormData((p) => ({ ...p, odeme_tipi: "yag" }))
+                        }
+                        className={`px-4 py-4 rounded-2xl border-2 font-black transition shadow-sm ${formData.odeme_tipi === "yag"
+                          ? "border-amber-500 bg-amber-50 text-amber-700"
+                          : "border-slate-200 bg-white text-slate-600 hover:bg-slate-50"
+                          }`}
+                      >
+                        HAK (YAĞ)
+                        <div className="text-xs font-bold opacity-70 mt-1">
+                          Yağ kesintisi yapılacak
+                        </div>
+                      </button>
+
+                      <button
+                        type="button"
+                        onClick={() =>
+                          setFormData((p) => ({ ...p, odeme_tipi: "para" }))
+                        }
+                        className={`px-4 py-4 rounded-2xl border-2 font-black transition shadow-sm ${formData.odeme_tipi === "para"
+                          ? "border-emerald-500 bg-emerald-50 text-emerald-700"
+                          : "border-slate-200 bg-white text-slate-600 hover:bg-slate-50"
+                          }`}
+                      >
+                        HAK BEDELİ (PARA)
+                        <div className="text-xs font-bold opacity-70 mt-1">
+                          Para ödenecek
+                        </div>
+                      </button>
+                    </div>
+                  </div>
+
                   <button
                     type="submit"
                     className="w-full py-5 bg-gradient-to-r from-emerald-500 to-emerald-600 hover:from-emerald-600 hover:to-emerald-700 text-white font-bold rounded-2xl transition-all transform hover:scale-[1.02] active:scale-[0.98] shadow-lg shadow-emerald-500/30 hover:shadow-emerald-500/50 flex items-center justify-center gap-3 text-lg mt-4 group"
@@ -432,10 +473,11 @@ export default function GirisciPanel() {
                       <tbody className="bg-white divide-y-2 divide-slate-100">
                         {kayitlar
                           .filter((kayit) => {
+                            if (kayit.status === 2) return false // Çıkışta olanları gösterme
                             if (!musteriNoAra) return true
                             return String(kayit.musteri_no).startsWith(musteriNoAra)
                           })
-                          .sort((a, b) => new Date(a.created_at) - new Date(b.created_at))
+                          .sort((a, b) => new Date(b.created_at) - new Date(a.created_at))
                           .map((kayit) => {
                             const { saat, tarih } = formatTarihSaat(kayit.created_at)
 

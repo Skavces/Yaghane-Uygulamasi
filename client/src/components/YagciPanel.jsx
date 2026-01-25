@@ -72,7 +72,7 @@ export default function YagciPanel({ defaultSettings }) {
       ...prev,
       zeytin_kg: secili.zeytin_kg || "",
       cikan_yag: "",
-      odeme_tipi: "para",
+      odeme_tipi: secili.odeme_tipi || "yag",
       bidon_no: "",
       notlar: "",
       firma_hakki: "",
@@ -363,11 +363,11 @@ export default function YagciPanel({ defaultSettings }) {
           </div>
         )}
 
-        <div className="grid grid-cols-1 lg:grid-cols-5 gap-6">
-          <div className="bg-white/80 backdrop-blur-xl rounded-3xl shadow-2xl border border-white/60 p-6 lg:col-span-2 relative overflow-hidden">
+        <div className="grid grid-cols-1 lg:grid-cols-7 gap-6">
+          <div className="bg-white/80 backdrop-blur-xl rounded-3xl shadow-2xl border border-white/60 p-6 lg:col-span-3 relative overflow-hidden flex flex-col lg:max-h-[700px]">
             <div className="absolute inset-0 bg-gradient-to-br from-emerald-50/50 to-transparent pointer-events-none"></div>
 
-            <div className="relative z-10">
+            <div className="relative z-10 h-full flex flex-col">
               <div className="flex items-center justify-between mb-4">
                 <h2 className="text-xl font-bold text-slate-800">Bekleyenler</h2>
                 <button
@@ -432,23 +432,45 @@ export default function YagciPanel({ defaultSettings }) {
                 </div>
               )}
 
-              <div className="space-y-2 max-h-[70vh] overflow-auto pr-1">
+              <div className="space-y-2 flex-1 min-h-0 overflow-auto pr-1">
                 {filtreliListe.map((m) => {
                   const active = secili?.id === m.id
                   return (
                     <button
                       key={m.id}
                       onClick={() => setSecili(m)}
-                      className={`w-full text-left p-4 pr-24 rounded-2xl border-2 transition-all transform hover:scale-[1.01] relative overflow-hidden ${active
+                      className={`w-full text-left p-4 pr-32 rounded-2xl border-2 transition-all transform hover:scale-[1.01] relative overflow-hidden ${active
                         ? "border-amber-400 bg-gradient-to-r from-amber-50 to-amber-100/50 shadow-lg shadow-amber-500/20"
                         : "border-slate-200 bg-white/60 hover:bg-white hover:border-slate-300 hover:shadow-md"
                         }`}
                     >
-                      <div>
-                        <p className="font-bold text-slate-800 text-lg truncate">{m.ad_soyad}</p>
-                        <p className="text-lg font-bold text-slate-700 mt-1">
-                          {m.telefon ? normalizeTelefon(m.telefon) : "-"}
-                        </p>
+                      <div className="flex flex-col h-full justify-between">
+                        <div>
+                          <div className="flex items-center gap-2 mb-1">
+                            <p className="font-bold text-slate-800 text-xl truncate flex-1">{m.ad_soyad}</p>
+                            <span className={`text-xs font-black px-2 py-0.5 rounded-md uppercase tracking-wider ${
+                              (m.odeme_tipi || 'yag') === 'yag' 
+                                ? "bg-amber-100 text-amber-700 border border-amber-200"
+                                : "bg-emerald-100 text-emerald-700 border border-emerald-200"
+                            }`}>
+                              {(m.odeme_tipi || 'yag') === 'yag' ? "HAK" : "PARA"}
+                            </span>
+                          </div>
+                          <p className="text-base font-bold text-slate-500">
+                            {m.telefon ? normalizeTelefon(m.telefon) : "-"}
+                          </p>
+                        </div>
+                        
+                        <div className="mt-3 pt-2 border-t border-slate-200/60">
+                          <p className="text-sm font-bold text-slate-500 flex items-center gap-1.5">
+                             <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+                             </svg>
+                             {new Date(m.created_at).toLocaleDateString("tr-TR", { day: "numeric", month: "long", year: "numeric" })}
+                             <span className="w-1.5 h-1.5 rounded-full bg-slate-300"></span>
+                             {new Date(m.created_at).toLocaleTimeString("tr-TR", { hour: "2-digit", minute: "2-digit" })}
+                          </p>
+                        </div>
                       </div>
                       <div className="absolute top-0 right-0 bottom-0 w-28 bg-emerald-600 rounded-r-xl flex items-center justify-center">
                         <p className="text-2xl font-black text-white">
@@ -462,7 +484,7 @@ export default function YagciPanel({ defaultSettings }) {
             </div>
           </div>
 
-          <div className="lg:col-span-3">
+          <div className="lg:col-span-4">
             {!secili ? (
               <div className="bg-white/80 backdrop-blur-xl rounded-3xl shadow-2xl border border-white/60 p-16 text-center relative overflow-hidden">
                 <div className="absolute inset-0 bg-gradient-to-br from-slate-50/50 to-transparent pointer-events-none"></div>

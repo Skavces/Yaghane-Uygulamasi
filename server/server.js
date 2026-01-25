@@ -95,6 +95,14 @@ db.serialize(() => {
     }
   })
 
+  db.run(`ALTER TABLE islemler ADD COLUMN odeme_tipi TEXT DEFAULT 'yag'`, (err) => {
+    if (err) {
+      if (!String(err.message || "").toLowerCase().includes("duplicate")) {
+        console.error("odeme_tipi kolon ekleme hatası:", err.message)
+      }
+    }
+  })
+
   db.run(
     `
     CREATE UNIQUE INDEX IF NOT EXISTS uniq_active_musteri_no
@@ -220,7 +228,7 @@ app.get("/api/yag-bekleyenler", (req, res) => {
 })
 
 app.post("/api/giris", (req, res) => {
-  const { musteri_no, ad_soyad, telefon, giris_durum } = req.body
+  const { musteri_no, ad_soyad, telefon, giris_durum, odeme_tipi } = req.body
   const turkeyTime = getTurkeyTimestamp()
 
   if (!musteri_no || !ad_soyad) {
@@ -229,10 +237,11 @@ app.post("/api/giris", (req, res) => {
 
   const status = giris_durum === "bekleyecek" ? 0 : 1
   const tel = normalizeTelefonTR(telefon)
+  const odeme = odeme_tipi || "yag"
 
   db.run(
-    "INSERT INTO islemler (musteri_no, ad_soyad, telefon, status, created_at) VALUES (?, ?, ?, ?, ?)",
-    [musteri_no, ad_soyad, tel || "", status, turkeyTime],
+    "INSERT INTO islemler (musteri_no, ad_soyad, telefon, status, created_at, odeme_tipi) VALUES (?, ?, ?, ?, ?, ?)",
+    [musteri_no, ad_soyad, tel || "", status, turkeyTime, odeme],
     function (err) {
       if (err) {
         if (err.message && err.message.includes("UNIQUE")) {
