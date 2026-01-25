@@ -621,7 +621,7 @@ export default function YagciPanel({ defaultSettings }) {
                         }`}
                     >
                       <p className="text-sm font-bold uppercase tracking-wide text-slate-600 mb-2">
-                        HAK BEDELİ
+                        PARA
                       </p>
                       <div className="flex items-baseline justify-center gap-2">
                         <span className="text-5xl font-black text-emerald-700">

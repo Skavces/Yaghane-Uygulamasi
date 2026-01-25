@@ -1058,7 +1058,7 @@ export default function CikisciPanel({ defaultSettings }) {
                       )}
                       {islem.odeme_tipi === "para" && (
                         <span className="inline-block px-2.5 py-1 rounded-xl border-2 border-emerald-300 bg-gradient-to-r from-emerald-50 to-emerald-100 text-emerald-700 text-[10px] font-bold">
-                          HAK BEDELİ
+                          PARA
                         </span>
                       )}
                     </div>
@@ -1299,7 +1299,7 @@ export default function CikisciPanel({ defaultSettings }) {
                         }`}
                     >
                       <p className="text-sm font-bold uppercase tracking-wide text-slate-600 mb-2">
-                        HAK BEDELİ
+                        PARA
                         {seciliIslem.odeme_tipi === "para" && <span className="ml-2 text-emerald-600">(SEÇİLEN)</span>}
                       </p>
                       <div className="flex items-baseline justify-center gap-2">

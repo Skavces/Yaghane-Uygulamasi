@@ -336,7 +336,7 @@ export default function GirisciPanel() {
                           : "border-slate-200 bg-white text-slate-600 hover:bg-slate-50"
                           }`}
                       >
-                        HAK (YAĞ)
+                        HAK
                         <div className="text-xs font-bold opacity-70 mt-1">
                           Yağ kesintisi yapılacak
                         </div>
@@ -352,7 +352,7 @@ export default function GirisciPanel() {
                           : "border-slate-200 bg-white text-slate-600 hover:bg-slate-50"
                           }`}
                       >
-                        HAK BEDELİ (PARA)
+                        PARA
                         <div className="text-xs font-bold opacity-70 mt-1">
                           Para ödenecek
                         </div>
