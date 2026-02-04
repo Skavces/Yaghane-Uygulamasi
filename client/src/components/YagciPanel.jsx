@@ -364,7 +364,7 @@ export default function YagciPanel({ defaultSettings }) {
         )}
 
         <div className="grid grid-cols-1 lg:grid-cols-7 gap-6">
-          <div className="bg-white/80 backdrop-blur-xl rounded-3xl shadow-2xl border border-white/60 p-6 lg:col-span-3 relative overflow-hidden flex flex-col lg:max-h-[700px]">
+          <div className="bg-white/80 backdrop-blur-xl rounded-3xl shadow-2xl border border-white/60 p-6 lg:col-span-3 relative overflow-hidden flex flex-col">
             <div className="absolute inset-0 bg-gradient-to-br from-emerald-50/50 to-transparent pointer-events-none"></div>
 
             <div className="relative z-10 h-full flex flex-col">

@@ -288,6 +288,13 @@ export default function CikisciPanel({ defaultSettings }) {
         const iadeCount = parseBidonList(x.iade_bidonlar ?? x.geri_alinan_bidonlar ?? "").length
         const kalanCount = verilenCount - iadeCount
 
+        const zeytin = parseFloat(x.zeytin_kg) || 0
+        const cikan = parseFloat(x.cikan_yag) || 0
+        let randiman = ""
+        if (zeytin > 0 && cikan > 0) {
+          randiman = ((cikan / zeytin) * 100).toFixed(1)
+        }
+
         return {
           "TARİH": tarih,
           "SAAT": saat,
@@ -297,7 +304,7 @@ export default function CikisciPanel({ defaultSettings }) {
           "TELEFON": normalizeTelefon(x.telefon) ?? "",
           "GELEN ZEYTİN (KG)": x.zeytin_kg ?? "",
           "ÇIKAN YAĞ (KG)": x.cikan_yag ?? "",
-          "HAK ORANI (%)": x.hak_oran ?? "",
+          "ORAN": randiman,
           "SEÇİLEN ÖDEME TİPİ": x.odeme_tipi === "yag" ? "YAĞ" : x.odeme_tipi === "para" ? "PARA" : "PERAKENDE",
           "HAK (KG)": x.firma_hakki ?? "",
           "HAK BEDELİ (₺)": x.firma_hakki_tl ?? "",
