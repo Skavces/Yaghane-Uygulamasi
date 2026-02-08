@@ -12,22 +12,21 @@ function App() {
   const [role, setRole] = useState(null) 
   const [settings, setSettings] = useState({ yag_fiyati: 300, hak_oran: 8 })
 
+
   useEffect(() => {
-    fetchSettings()
+    void (async () => {
+      try {
+        const res = await axios.get("/api/settings")
+        setSettings(res.data)
+      } catch (err) {
+        console.error("Ayarlar çekilemedi", err)
+      }
+    })()
     socket.on("settings-updated", (newSettings) => {
        setSettings(newSettings)
     })
     return () => socket.off("settings-updated")
   }, [])
-
-  const fetchSettings = async () => {
-    try {
-      const res = await axios.get("/api/settings")
-      setSettings(res.data)
-    } catch (e) {
-      console.error("Ayarlar çekilemedi", e)
-    }
-  }
 
   const handleLogout = () => setRole(null)
 

@@ -1,4 +1,4 @@
-import { useState, useEffect, useMemo, useRef } from "react"
+import { useState, useEffect, useMemo, useRef, useCallback } from "react"
 import axios from "axios"
 import io from "socket.io-client"
 import * as XLSX from "xlsx-js-style"
@@ -88,7 +88,7 @@ export default function CikisciPanel({ defaultSettings }) {
     return a.join("-")
   }
 
-  const bidonKalanHesapla = (verilenStr, iadeStr) => {
+  const bidonKalanHesapla = useCallback((verilenStr, iadeStr) => {
     const verilen = parseBidonList(verilenStr)
     const iadeArr = parseBidonList(iadeStr)
     const iadeCounts = {}
@@ -105,7 +105,7 @@ export default function CikisciPanel({ defaultSettings }) {
       }
     }
     return kalan
-  }
+  }, [])
 
   const handleSatisInput = (e) => {
     let val = e.target.value
@@ -145,7 +145,7 @@ export default function CikisciPanel({ defaultSettings }) {
       setBekleyenMusteriAra("")
       fetchListe()
       setTimeout(() => setMesaj(""), 3000)
-    } catch (error) {
+    } catch {
       alert("Satış kaydedilirken hata oluştu")
     }
   }
@@ -180,7 +180,7 @@ export default function CikisciPanel({ defaultSettings }) {
       setSeciliIslem(null)
       fetchListe()
       setTimeout(() => setMesaj(""), 3000)
-    } catch (error) {
+    } catch {
       alert("İşlem sırasında hata oluştu")
     }
   }
@@ -249,7 +249,7 @@ export default function CikisciPanel({ defaultSettings }) {
     }
   }
 
-  const verileriHazirla = (islem) => {
+  const verileriHazirla = useCallback((islem) => {
     if (islem.odeme_tipi === "SATIS") {
       return { kalanYag: islem.cikan_yag, tutar: islem.firma_hakki_tl, fiyat: islem.yag_fiyati }
     }
@@ -264,7 +264,7 @@ export default function CikisciPanel({ defaultSettings }) {
       firmaHakki: islem.firma_hakki ?? 0,
       firmaHakkiTL: islem.firma_hakki_tl ?? 0,
     }
-  }
+  }, [])
 
   const handleExcelIndir = async () => {
     try {
@@ -382,7 +382,7 @@ export default function CikisciPanel({ defaultSettings }) {
   const hazir = useMemo(() => {
     if (!seciliIslem) return null
     return verileriHazirla(seciliIslem)
-  }, [seciliIslem])
+  }, [seciliIslem, verileriHazirla])
 
   const hesapDetay = useMemo(() => {
     if (!seciliIslem) return { hakKGround: 0, paraTL: "0.00" }
@@ -421,18 +421,18 @@ export default function CikisciPanel({ defaultSettings }) {
     return parseBidonList(seciliIslem.bidon_no)
   }, [seciliIslem])
 
-  const seciliIadeBidonlar = useMemo(() => {
+  const _seciliIadeBidonlar = useMemo(() => {
     if (!seciliIslem) return []
     return parseBidonList(seciliIslem.iade_bidonlar ?? seciliIslem.geri_alinan_bidonlar ?? "")
   }, [seciliIslem])
 
-  const seciliKalanBidonlar = useMemo(() => {
+  const _seciliKalanBidonlar = useMemo(() => {
     if (!seciliIslem) return []
     return bidonKalanHesapla(
       seciliIslem.bidon_no ?? "",
       seciliIslem.iade_bidonlar ?? seciliIslem.geri_alinan_bidonlar ?? ""
     )
-  }, [seciliIslem])
+  }, [seciliIslem, bidonKalanHesapla])
 
   const ayniTelefonTumBidonlar = useMemo(() => {
     if (!seciliIslem?.telefon) return { verilenler: [], iadeler: [], kalanlar: [] }
@@ -625,7 +625,7 @@ export default function CikisciPanel({ defaultSettings }) {
     }
   }
 
-  const handleIadeTemizle = async () => {
+  const _handleIadeTemizle = async () => {
     if (!seciliIslem) return
     try {
       const payload = { iade_bidonlar: "" }
@@ -637,8 +637,8 @@ export default function CikisciPanel({ defaultSettings }) {
       setSeciliIslem((prev) => (prev ? { ...prev, iade_bidonlar: "" } : prev))
       fetchListe()
       setTimeout(() => setMesaj(""), 3000)
-    } catch (e) {
-      console.error(e)
+    } catch (err) {
+      console.error(err)
       alert("İadeler temizlenirken hata oluştu.")
     }
   }
@@ -919,7 +919,7 @@ export default function CikisciPanel({ defaultSettings }) {
           </button>
           <button
             onClick={handleExcelIndir}
-            className="w-full mt-4 py-4 bg-gradient-to-r from-emerald-500 to-emerald-600 hover:from-emerald-600 hover:to-emerald-700 text-white font-bold rounded-2xl shadow-lg shadow-emerald-500/30 hover:shadow-emerald-500/50 transition-all transform hover:scale-[1.01] active:scale-[0.99] transition-all flex items-center justify-center gap-2 group"
+            className="w-full mt-4 py-4 bg-gradient-to-r from-emerald-500 to-emerald-600 hover:from-emerald-600 hover:to-emerald-700 text-white font-bold rounded-2xl shadow-lg shadow-emerald-500/30 hover:shadow-emerald-500/50 transition-all transform hover:scale-[1.01] active:scale-[0.99] flex items-center justify-center gap-2 group"
           >
             <svg className="w-6 h-6 group-hover:animate-bounce" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" /></svg>
             <span>Geçmiş Kayıtları İndir</span>

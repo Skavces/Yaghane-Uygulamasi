@@ -20,7 +20,7 @@ export default function SettingsModal({ onClose, onSave }) {
         yag_fiyati: res.data.yag_fiyati,
         hak_oran: res.data.hak_oran,
       })
-    } catch (e) {
+    } catch {
       setError("Ayarlar yüklenemedi.")
     }
   }
@@ -33,7 +33,7 @@ export default function SettingsModal({ onClose, onSave }) {
         await axios.put("/api/settings", formData)
         if (onSave) onSave(formData)
         onClose()
-    } catch (e) {
+    } catch {
       setError("Ayarlar kaydedilemedi.")
     } finally {
       setLoading(false)

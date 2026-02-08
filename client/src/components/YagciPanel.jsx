@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useRef, useState } from "react"
+import { useEffect, useMemo, useRef, useState, useCallback } from "react"
 import axios from "axios"
 
 axios.defaults.baseURL = "/"
@@ -9,7 +9,7 @@ export default function YagciPanel({ defaultSettings }) {
   const [loadingListe, setLoadingListe] = useState(false)
   const [listeHata, setListeHata] = useState("")
   const [secili, setSecili] = useState(null)
-  const [showInfo, setShowInfo] = useState(false)
+
   const defOran = defaultSettings?.hak_oran || "8"
   const defFiyat = defaultSettings?.yag_fiyati || "300"
 
@@ -42,7 +42,7 @@ export default function YagciPanel({ defaultSettings }) {
     try {
       const res = await axios.get("/api/yag-bekleyenler")
       setListe(Array.isArray(res.data) ? res.data : [])
-    } catch (e) {
+    } catch {
       setListe([])
       setListeHata("Bekleyen liste çekilemedi.")
     } finally {
@@ -201,7 +201,7 @@ export default function YagciPanel({ defaultSettings }) {
       setSecili(null)
       await fetchBekleyenler()
       setTimeout(() => setMesaj(""), 2500)
-    } catch (e) {
+    } catch {
       setHata("Kayıt sırasında hata oluştu")
     }
   }
@@ -259,10 +259,10 @@ export default function YagciPanel({ defaultSettings }) {
     return d.replace(/(\d{4})(\d{3})(\d{2})(\d{2})/, "$1 $2 $3 $4")
   }
 
-  const urunIadeBidonSayisi = (item) => {
+  const urunIadeBidonSayisi = useCallback((item) => {
     const iadeStr = item.iade_bidonlar ?? item.geri_alinan_bidonlar ?? ""
     return countBidon(iadeStr)
-  }
+  }, [])
 
   const toplamGecmisBidon = useMemo(() => {
     if (!secili) return 0
@@ -293,8 +293,9 @@ export default function YagciPanel({ defaultSettings }) {
       if (fark > 0) toplam += fark
     })
 
+
     return toplam
-  }, [secili, tumListe])
+  }, [secili, tumListe, urunIadeBidonSayisi])
 
 
   return (

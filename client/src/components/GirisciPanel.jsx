@@ -20,24 +20,27 @@ export default function GirisciPanel() {
   const [mesajTipi, setMesajTipi] = useState("")
   const [musteriNoAra, setMusteriNoAra] = useState("")
 
-  useEffect(() => {
-    fetchKayitlar()
-    socket.on("veri-guncellendi", fetchKayitlar)
-    return () => socket.off("veri-guncellendi", fetchKayitlar)
-  }, [])
-
   const fetchKayitlar = async () => {
     try {
       const res = await axios.get("/api/giris-bekleyenler")
       setKayitlar(res.data)
-    } catch (error) {
-      console.error(error)
+    } catch (err) {
+      console.error(err)
     }
   }
 
-  const handleChange = (e) => {
-    setFormData({ ...formData, [e.target.name]: e.target.value })
-  }
+  useEffect(() => {
+    void (async () => {
+      try {
+        const res = await axios.get("/api/giris-bekleyenler")
+        setKayitlar(res.data)
+      } catch (err) {
+        console.error(err)
+      }
+    })()
+    socket.on("veri-guncellendi", fetchKayitlar)
+    return () => socket.off("veri-guncellendi", fetchKayitlar)
+  }, [])
 
   const handleSubmit = async (e) => {
     e.preventDefault()
@@ -483,7 +486,6 @@ export default function GirisciPanel() {
 
                             const isBekleyecek = kayit.status === 0
                             const isSirada = kayit.status === 1
-                            const isCikista = kayit.status === 2
 
                             const statusText = isBekleyecek
                               ? "Bekleyecek"
