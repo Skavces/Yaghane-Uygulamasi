@@ -1,5 +1,6 @@
 import { useState, useEffect, useMemo, useRef, useCallback } from "react"
 import axios from "axios"
+import { hesaplaYagIslemi } from "../utils/yagHesap"
 import io from "socket.io-client"
 import * as XLSX from "xlsx-js-style"
 import { saveAs } from "file-saver"
@@ -210,43 +211,13 @@ export default function CikisciPanel({ defaultSettings }) {
 
   const calculateYagIslemi = (islem) => {
     if (!islem) return null
-
-    const cikan = parseFloat(islem.cikan_yag) || 0
-    const zeytin = parseFloat(islem.zeytin_kg) || 0
-    const oran = parseFloat(islem.hak_oran) || 0
-    const fiyat = parseFloat(islem.yag_fiyati) || 0
-    const daraBidonSayisi = Math.round(cikan / 50)
-    const dara = daraBidonSayisi * 2
-    const netYag = Math.max(0, cikan - dara)
-    const hakRaw = (netYag * oran) / 100
-    const hak = Math.round(hakRaw) // 0.5 ve üstü yukarı
-    const hakBedeliTL = (hak * fiyat).toFixed(0)
-
-    let musteriKalan = 0
-    if (islem.odeme_tipi === "yag") {
-       musteriKalan = netYag - hak
-    } else {
-       musteriKalan = netYag
-    }
-
-    const verilecekBidon = Math.ceil(musteriKalan / 50)
-    
-    let randiman = 0
-    if (zeytin > 0 && cikan > 0) {
-       randiman = (cikan / zeytin) * 100
-    }
-
-    return {
-      cikan,
-      zeytin,
-      dara,
-      netYag,
-      hak,
-      hakBedeliTL,
-      musteriKalan,
-      verilecekBidon,
-      randiman: randiman.toFixed(1)
-    }
+    return hesaplaYagIslemi({
+      cikanYag:  islem.cikan_yag,
+      zeytin:    islem.zeytin_kg,
+      hakOran:   islem.hak_oran,
+      yagFiyati: islem.yag_fiyati,
+      odemeTipi: islem.odeme_tipi,
+    })
   }
 
   const verileriHazirla = useCallback((islem) => {
@@ -391,10 +362,11 @@ export default function CikisciPanel({ defaultSettings }) {
     if (!hesap) return { hakKGround: 0, paraTL: "0.00" }
 
     return { 
-      hakKGround: hesap.hak, 
-      paraTL: hesap.hakBedeliTL 
+      hakKGround: hesap.hakKGround, 
+      paraTL: hesap.paraTL 
     }
   }, [seciliIslem])
+
 
   const bidonOzetAyniTelefon = useMemo(() => {
     if (!seciliIslem?.telefon) return null

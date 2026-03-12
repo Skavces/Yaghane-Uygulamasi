@@ -203,9 +203,14 @@ export default function Login({ onLogin }) {
               <span className="text-xs text-slate-500 font-medium">
                 Made by
               </span>
-              <span className="text-sm font-bold text-slate-700">
+              <a
+                href="https://selimkavaklicesme.com"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="text-sm font-bold text-slate-700 hover:text-slate-900 transition"
+              >
                 Selim Kavaklıçeşme
-              </span>
+              </a>
               <span className="text-slate-300">•</span>
               <a
                 href="tel:+905516021021"
@@ -228,7 +233,7 @@ export default function Login({ onLogin }) {
           </div>
         </div>
       </div>
-      
+
       {settingsOpen && <SettingsModal onClose={() => setSettingsOpen(false)} />}
     </div>
   )

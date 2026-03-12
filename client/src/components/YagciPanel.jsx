@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useRef, useState, useCallback } from "react"
 import axios from "axios"
+import { hesaplaYagIslemi } from "../utils/yagHesap"
 
 axios.defaults.baseURL = "/"
 
@@ -81,52 +82,13 @@ export default function YagciPanel({ defaultSettings }) {
   }, [secili])
 
   function calculateValues(vals) {
-    const zeytin = parseFloat(vals.zeytin_kg) || 0
-    const kantarYag = parseFloat(vals.cikan_yag) || 0
-    const oran = parseFloat(vals.hak_oran) || 0
-    const fiyat = parseFloat(vals.yag_fiyati) || 0
-    const odemeTipi = vals.odeme_tipi || "yag"
-    const daraBidonSayisi = kantarYag > 0 ? Math.round(kantarYag / 50) : 0
-    const dara = daraBidonSayisi * 2
-    let netYag = kantarYag - dara
-    if (netYag < 0) netYag = 0
-
-    const hakKGraw = (netYag * oran) / 100
-    const hakKGround = Math.round(hakKGraw + Number.EPSILON)
-    const paraTL = (hakKGround * fiyat).toFixed(0)
-    const yagTL = (hakKGround * fiyat).toFixed(2)
-
-    let firmaHakki, firmaHakkiTL
-    let musteriKalanYag
-
-    if (odemeTipi === "para") {
-      firmaHakki = hakKGround
-      firmaHakkiTL = paraTL
-      musteriKalanYag = netYag
-    } else {
-      firmaHakki = hakKGround
-      firmaHakkiTL = yagTL
-      musteriKalanYag = netYag - hakKGround
-    }
-
-    if (musteriKalanYag < 0) musteriKalanYag = 0
-
-    const verilecekBidon = musteriKalanYag > 0 ? Math.ceil(musteriKalanYag / 50) : 0
-    const randiman = zeytin > 0 && kantarYag > 0 ? (zeytin / kantarYag) : 0
-
-    return {
-      dara,
-      netYag,
-      hakKGraw,
-      hakKGround,
-      paraTL,
-      yagTL,
-      firmaHakki,
-      firmaHakkiTL,
-      musteriKalanYag,
-      verilecekBidon,
-      randiman: randiman.toFixed(1)
-    }
+    return hesaplaYagIslemi({
+      cikanYag:  vals.cikan_yag,
+      zeytin:    vals.zeytin_kg,
+      hakOran:   vals.hak_oran,
+      yagFiyati: vals.yag_fiyati,
+      odemeTipi: vals.odeme_tipi,
+    })
   }
 
   const hesap = useMemo(() => {
@@ -165,9 +127,9 @@ export default function YagciPanel({ defaultSettings }) {
     })
 
     setHesapSonuc({
-      kalanYag: val.musteriKalanYag.toFixed(1),
+      kalanYag: val.musteriKalan.toFixed(1),
       bidon52: "0",
-      bidon50: "0", 
+      bidon50: "0",
       verilecekBidon: val.verilecekBidon,
       randiman: val.randiman
     })
