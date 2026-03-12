@@ -1031,12 +1031,12 @@ export default function CikisciPanel({ defaultSettings }) {
                   ) : (
                     <div className="flex gap-2">
                       {islem.odeme_tipi === "yag" && (
-                        <span className="inline-block px-2.5 py-1 rounded-xl border-2 border-amber-300 bg-gradient-to-r from-amber-50 to-amber-100 text-amber-700 text-[10px] font-bold">
+                        <span className="inline-block px-2.5 py-1 rounded-xl border-2 border-blue-300 bg-gradient-to-r from-blue-50 to-blue-100 text-blue-700 text-[10px] font-bold">
                           HAK
                         </span>
                       )}
                       {islem.odeme_tipi === "para" && (
-                        <span className="inline-block px-2.5 py-1 rounded-xl border-2 border-emerald-300 bg-gradient-to-r from-emerald-50 to-emerald-100 text-emerald-700 text-[10px] font-bold">
+                        <span className="inline-block px-2.5 py-1 rounded-xl border-2 border-red-300 bg-gradient-to-r from-red-50 to-red-100 text-red-700 text-[10px] font-bold">
                           PARA
                         </span>
                       )}
@@ -1253,13 +1253,13 @@ export default function CikisciPanel({ defaultSettings }) {
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                     <div
                       className={`p-6 rounded-2xl border-2 transition-all text-center transform ${seciliIslem.odeme_tipi === "yag"
-                        ? "border-amber-500 bg-gradient-to-br from-amber-50 to-amber-100/50 shadow-xl shadow-amber-500/20"
+                        ? "border-blue-500 bg-gradient-to-br from-blue-50 to-blue-100/50 shadow-xl shadow-blue-500/20"
                         : "border-slate-200 bg-white/60 opacity-60"
                         }`}
                     >
                       <p className="text-sm font-bold uppercase tracking-wide text-slate-600 mb-2">
                         HAK
-                        {seciliIslem.odeme_tipi === "yag" && <span className="ml-2 text-amber-600">(SEÇİLEN)</span>}
+                        {seciliIslem.odeme_tipi === "yag" && <span className="ml-2 text-blue-600">(SEÇİLEN)</span>}
                       </p>
                       <div className="flex items-baseline justify-center gap-2">
                         <span className="text-5xl font-black text-slate-800">
@@ -1273,19 +1273,19 @@ export default function CikisciPanel({ defaultSettings }) {
 
                     <div
                       className={`p-6 rounded-2xl border-2 transition-all text-center transform ${seciliIslem.odeme_tipi === "para"
-                        ? "border-emerald-500 bg-gradient-to-br from-emerald-50 to-emerald-100/50 shadow-xl shadow-emerald-500/20"
+                        ? "border-red-500 bg-gradient-to-br from-red-50 to-red-100/50 shadow-xl shadow-red-500/20"
                         : "border-slate-200 bg-white/60 opacity-60"
                         }`}
                     >
                       <p className="text-sm font-bold uppercase tracking-wide text-slate-600 mb-2">
                         PARA
-                        {seciliIslem.odeme_tipi === "para" && <span className="ml-2 text-emerald-600">(SEÇİLEN)</span>}
+                        {seciliIslem.odeme_tipi === "para" && <span className="ml-2 text-red-600">(SEÇİLEN)</span>}
                       </p>
                       <div className="flex items-baseline justify-center gap-2">
-                        <span className="text-5xl font-black text-emerald-700">
+                        <span className="text-5xl font-black text-red-700">
                           {hesapDetay.paraTL}
                         </span>
-                        <span className="text-base font-bold text-emerald-600">
+                        <span className="text-base font-bold text-red-600">
                           ₺ Ödenir
                         </span>
                       </div>

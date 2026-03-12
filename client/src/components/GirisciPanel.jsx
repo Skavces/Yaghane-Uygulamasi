@@ -335,7 +335,7 @@ export default function GirisciPanel() {
                           setFormData((p) => ({ ...p, odeme_tipi: "yag" }))
                         }
                         className={`px-4 py-4 rounded-2xl border-2 font-black transition shadow-sm ${formData.odeme_tipi === "yag"
-                          ? "border-amber-500 bg-amber-50 text-amber-700"
+                          ? "border-blue-500 bg-blue-50 text-blue-700"
                           : "border-slate-200 bg-white text-slate-600 hover:bg-slate-50"
                           }`}
                       >
@@ -351,7 +351,7 @@ export default function GirisciPanel() {
                           setFormData((p) => ({ ...p, odeme_tipi: "para" }))
                         }
                         className={`px-4 py-4 rounded-2xl border-2 font-black transition shadow-sm ${formData.odeme_tipi === "para"
-                          ? "border-emerald-500 bg-emerald-50 text-emerald-700"
+                          ? "border-red-500 bg-red-50 text-red-700"
                           : "border-slate-200 bg-white text-slate-600 hover:bg-slate-50"
                           }`}
                       >
@@ -468,6 +468,9 @@ export default function GirisciPanel() {
                             Durum
                           </th>
                           <th className="px-6 py-4 text-center text-xs font-bold text-slate-600 uppercase tracking-wider">
+                            Ödeme Tipi
+                          </th>
+                          <th className="px-6 py-4 text-center text-xs font-bold text-slate-600 uppercase tracking-wider">
                             İşlem
                           </th>
                         </tr>
@@ -512,9 +515,11 @@ export default function GirisciPanel() {
                                     <span className="text-lg font-bold text-slate-700">
                                       {kayit.ad_soyad}
                                     </span>
-                                    <span className="text-lg font-bold text-slate-500 mt-0.5">
-                                      {kayit.telefon ? formatTelefonTR(kayit.telefon) : "-"}
-                                    </span>
+                                    <div className="flex items-center gap-2 mt-0.5">
+                                      <span className="text-lg font-bold text-slate-500">
+                                        {kayit.telefon ? formatTelefonTR(kayit.telefon) : "-"}
+                                      </span>
+                                    </div>
                                   </div>
                                 </td>
 
@@ -547,6 +552,16 @@ export default function GirisciPanel() {
                                       <span className="w-2 h-2 rounded-full bg-orange-500 mr-2 shadow-lg"></span>
                                     )}
                                     {statusText}
+                                  </span>
+                                </td>
+
+                                <td className="px-6 py-4 text-center">
+                                  <span className={`inline-flex items-center px-3 py-1.5 rounded-lg text-xs font-black uppercase tracking-wider border ${
+                                    (kayit.odeme_tipi || 'yag') === 'yag'
+                                      ? "bg-blue-100 text-blue-700 border-blue-300"
+                                      : "bg-red-100 text-red-700 border-red-300"
+                                  }`}>
+                                    {(kayit.odeme_tipi || 'yag') === 'yag' ? "HAK" : "PARA"}
                                   </span>
                                 </td>
 

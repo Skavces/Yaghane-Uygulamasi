@@ -413,8 +413,8 @@ export default function YagciPanel({ defaultSettings }) {
                             <p className="font-bold text-slate-800 text-xl truncate flex-1">{m.ad_soyad}</p>
                             <span className={`text-xs font-black px-2 py-0.5 rounded-md uppercase tracking-wider ${
                               (m.odeme_tipi || 'yag') === 'yag' 
-                                ? "bg-amber-100 text-amber-700 border border-amber-200"
-                                : "bg-emerald-100 text-emerald-700 border border-emerald-200"
+                                ? "bg-blue-100 text-blue-700 border border-blue-200"
+                                : "bg-red-100 text-red-700 border border-red-200"
                             }`}>
                               {(m.odeme_tipi || 'yag') === 'yag' ? "HAK" : "PARA"}
                             </span>
@@ -556,18 +556,18 @@ export default function YagciPanel({ defaultSettings }) {
                         setFormData({ ...formData, odeme_tipi: "yag" })
                       }
                       className={`p-6 rounded-2xl border-2 transition-all text-center transform hover:scale-[1.02] ${formData.odeme_tipi === "yag"
-                        ? "border-amber-500 bg-gradient-to-br from-amber-50 to-amber-100/50 shadow-xl shadow-amber-500/20"
+                        ? "border-blue-500 bg-gradient-to-br from-blue-50 to-blue-100/50 shadow-xl shadow-blue-500/20"
                         : "border-slate-200 bg-white/60 hover:border-slate-300 hover:shadow-lg"
                         }`}
                     >
-                      <p className="text-sm font-bold uppercase tracking-wide text-slate-600 mb-2">
+                      <p className="text-sm font-bold uppercase tracking-wide text-blue-600 mb-2">
                         HAK
                       </p>
                       <div className="flex items-baseline justify-center gap-2">
-                        <span className="text-5xl font-black text-slate-800">
+                        <span className="text-5xl font-black text-blue-700">
                           {formData.firma_hakki || "0"}
                         </span>
-                        <span className="text-lg font-bold text-slate-500">
+                        <span className="text-lg font-bold text-blue-600">
                           KG Kesilir
                         </span>
                       </div>
@@ -579,18 +579,18 @@ export default function YagciPanel({ defaultSettings }) {
                         setFormData({ ...formData, odeme_tipi: "para" })
                       }
                       className={`p-6 rounded-2xl border-2 transition-all text-center transform hover:scale-[1.02] ${formData.odeme_tipi === "para"
-                        ? "border-emerald-500 bg-gradient-to-br from-emerald-50 to-emerald-100/50 shadow-xl shadow-emerald-500/20"
+                        ? "border-red-500 bg-gradient-to-br from-red-50 to-red-100/50 shadow-xl shadow-red-500/20"
                         : "border-slate-200 bg-white/60 hover:border-slate-300 hover:shadow-lg"
                         }`}
                     >
-                      <p className="text-sm font-bold uppercase tracking-wide text-slate-600 mb-2">
+                      <p className="text-sm font-bold uppercase tracking-wide text-red-600 mb-2">
                         PARA
                       </p>
                       <div className="flex items-baseline justify-center gap-2">
-                        <span className="text-5xl font-black text-emerald-700">
+                        <span className="text-5xl font-black text-red-700">
                           {hesap.paraTL}
                         </span>
-                        <span className="text-lg font-bold text-emerald-600">
+                        <span className="text-lg font-bold text-red-600">
                           ₺ Ödenir
                         </span>
                       </div>
