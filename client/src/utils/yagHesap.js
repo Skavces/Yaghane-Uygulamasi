@@ -25,7 +25,8 @@ export function hesaplaYagIslemi({ cikanYag, zeytin, hakOran, yagFiyati, odemeTi
 
   let musteriKalan
   if (tip === "para") {
-    musteriKalan = netYag
+    const parabidonSayisi = netYag > 0 ? Math.ceil(netYag / 50) : 0
+    musteriKalan = Math.max(0, netYag - parabidonSayisi * 2)
   } else {
     musteriKalan = Math.max(0, netYag - hakKGround)
   }
