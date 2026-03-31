@@ -231,9 +231,9 @@ export default function GirisciPanel() {
                   />
                 </svg>
                 Takip Listesi
-                {kayitlar.length > 0 && (
+                {kayitlar.filter(k => k.status !== 2).length > 0 && (
                   <span className="ml-2 px-2 py-0.5 bg-gradient-to-r from-rose-500 to-rose-600 text-white text-xs font-bold rounded-full shadow-lg animate-pulse">
-                    {kayitlar.length}
+                    {kayitlar.filter(k => k.status !== 2).length}
                   </span>
                 )}
               </span>

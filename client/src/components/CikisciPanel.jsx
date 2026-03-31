@@ -1277,7 +1277,7 @@ export default function CikisciPanel({ defaultSettings }) {
 
                   <div className="grid grid-cols-2 gap-4">
                     <div>
-                      <label className="block text-lg font-bold text-slate-700 mb-1 text-center">Kantarda Bidon Sayısı</label>
+                      <label className="block text-lg font-bold text-slate-700 mb-1 text-center">Kantardaki Bidon Sayısı</label>
                       <div className="bg-white/80 backdrop-blur-sm p-4 rounded-2xl border-2 border-slate-200 shadow-lg text-center">
                         <div className="text-4xl font-black text-slate-800">{seciliIslem.kantar_bidon ?? "—"}</div>
                       </div>
