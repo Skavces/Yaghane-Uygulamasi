@@ -75,6 +75,7 @@ export default function YagciPanel({ defaultSettings }) {
       ...prev,
       zeytin_kg: secili.zeytin_kg || "",
       cikan_yag: "",
+      kantar_bidon: "",
       odeme_tipi: secili.odeme_tipi || "yag",
       bidon_no: "",
       notlar: "",

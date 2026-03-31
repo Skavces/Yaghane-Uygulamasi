@@ -53,6 +53,12 @@ export default function CikisciPanel({ defaultSettings }) {
     return () => socket.off("veri-guncellendi")
   }, [])
 
+  useEffect(() => {
+    if (!seciliIslem) return
+    const guncel = tumListe.find((x) => x.id === seciliIslem.id)
+    if (guncel) setSeciliIslem(guncel)
+  }, [tumListe])
+
   const fetchListe = async () => {
     try {
       const res = await axios.get("/api/liste")
@@ -1255,20 +1261,26 @@ export default function CikisciPanel({ defaultSettings }) {
               ) : (
                 <>
                   <div className="grid grid-cols-2 gap-4">
-                    <div className="bg-white/80 backdrop-blur-sm p-4 rounded-2xl border-2 border-slate-200 shadow-lg text-center">
-                      <label className="block text-lg font-bold text-slate-700 mb-1">Gelen Zeytin (KG)</label>
-                      <div className="text-4xl font-black text-slate-800">{seciliIslem.zeytin_kg}</div>
+                    <div>
+                      <label className="block text-lg font-bold text-slate-700 mb-1 text-center">Gelen Zeytin (KG)</label>
+                      <div className="bg-white/80 backdrop-blur-sm p-4 rounded-2xl border-2 border-slate-200 shadow-lg text-center">
+                        <div className="text-4xl font-black text-slate-800">{seciliIslem.zeytin_kg}</div>
+                      </div>
                     </div>
-                    <div className="bg-gradient-to-br from-amber-50 to-amber-100/50 p-4 rounded-2xl border-2 border-amber-300 shadow-lg text-center">
-                      <label className="block text-lg font-bold text-amber-800 mb-1">Çıkan Yağ (KG)</label>
-                      <div className="text-4xl font-black text-amber-900">{seciliIslem.cikan_yag}</div>
+                    <div>
+                      <label className="block text-lg font-bold text-slate-700 mb-1 text-center">Çıkan Yağ (KG)</label>
+                      <div className="bg-gradient-to-br from-amber-50 to-amber-100/50 p-4 rounded-2xl border-2 border-amber-300 shadow-lg text-center">
+                        <div className="text-4xl font-black text-amber-900">{seciliIslem.cikan_yag}</div>
+                      </div>
                     </div>
                   </div>
 
                   <div className="grid grid-cols-2 gap-4">
-                    <div className="bg-white/80 backdrop-blur-sm p-4 rounded-2xl border-2 border-slate-200 shadow-lg text-center">
-                      <label className="block text-lg font-bold text-slate-700 mb-1">Kantarda Bidon Sayısı</label>
-                      <div className="text-4xl font-black text-slate-800">{seciliIslem.kantar_bidon ?? "—"}</div>
+                    <div>
+                      <label className="block text-lg font-bold text-slate-700 mb-1 text-center">Kantarda Bidon Sayısı</label>
+                      <div className="bg-white/80 backdrop-blur-sm p-4 rounded-2xl border-2 border-slate-200 shadow-lg text-center">
+                        <div className="text-4xl font-black text-slate-800">{seciliIslem.kantar_bidon ?? "—"}</div>
+                      </div>
                     </div>
                     <div>
                       <label className="block text-lg font-bold text-slate-700 mb-1 text-center">Net Yağ (KG)</label>
@@ -1279,13 +1291,17 @@ export default function CikisciPanel({ defaultSettings }) {
                   </div>
 
                   <div className="grid grid-cols-2 gap-4">
-                    <div className="bg-white/80 backdrop-blur-sm p-4 rounded-2xl border-2 border-slate-200 shadow-lg text-center">
-                      <label className="block text-lg font-bold text-slate-700 mb-1">Hak Oranı</label>
-                      <div className="text-4xl font-black text-slate-800">%{seciliIslem.hak_oran}</div>
+                    <div>
+                      <label className="block text-lg font-bold text-slate-700 mb-1 text-center">Hak Oranı</label>
+                      <div className="bg-white/80 backdrop-blur-sm p-4 rounded-2xl border-2 border-slate-200 shadow-lg text-center">
+                        <div className="text-4xl font-black text-slate-800">%{seciliIslem.hak_oran}</div>
+                      </div>
                     </div>
-                    <div className="bg-gradient-to-br from-emerald-50 to-emerald-100/50 p-4 rounded-2xl border-2 border-emerald-300 shadow-lg text-center">
-                      <label className="block text-lg font-bold text-emerald-800 mb-1">Yağ Fiyatı (₺)</label>
-                      <div className="text-4xl font-black text-emerald-800">{seciliIslem.yag_fiyati}</div>
+                    <div>
+                      <label className="block text-lg font-bold text-slate-700 mb-1 text-center">Yağ Fiyatı (₺)</label>
+                      <div className="bg-gradient-to-br from-emerald-50 to-emerald-100/50 p-4 rounded-2xl border-2 border-emerald-300 shadow-lg text-center">
+                        <div className="text-4xl font-black text-emerald-800">{seciliIslem.yag_fiyati}</div>
+                      </div>
                     </div>
                   </div>
 
