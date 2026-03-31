@@ -78,7 +78,7 @@ export default function Login({ onLogin }) {
           <div className="inline-flex items-center justify-center mb-6">
             <div className="relative">
               <div className="absolute inset-0 bg-gradient-to-br from-emerald-400 to-emerald-600 rounded-full blur-2xl opacity-30 animate-pulse"></div>
-              <span className="text-7xl relative z-10 inline-block transform hover:scale-110 transition-transform duration-300">🫒</span>
+              <img src="/zeytin-logo.svg" alt="logo" className="w-40 h-40 relative z-10 transform hover:scale-110 transition-transform duration-300" />
             </div>
           </div>
 

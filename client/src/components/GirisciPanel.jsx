@@ -18,6 +18,7 @@ export default function GirisciPanel() {
   const [kayitlar, setKayitlar] = useState([])
   const [mesaj, setMesaj] = useState("")
   const [mesajTipi, setMesajTipi] = useState("")
+  const [mesajAnim, setMesajAnim] = useState("spin")
   const [musteriNoAra, setMusteriNoAra] = useState("")
 
   const fetchKayitlar = async () => {
@@ -46,13 +47,12 @@ export default function GirisciPanel() {
     e.preventDefault()
     try {
       await axios.post("/api/giris", formData)
-      setMesaj(
-        formData.giris_durum === "bekleyecek"
-          ? "Müşteri kaydedildi (Bekleyecek)"
-          : "Müşteri kaydedildi (Sıkılacak)"
-      )
+      setMesajAnim("spin")
+      setMesaj("Müşteri kaydedildi, listeye düştü.")
       setMesajTipi("success")
       setFormData({ musteri_no: "", ad_soyad: "", telefon: "", giris_durum: "sikilacak", odeme_tipi: "yag" })
+      setActiveTab("liste")
+      setTimeout(() => setMesajAnim("tik"), 1200)
       setTimeout(() => setMesaj(""), 3000)
     } catch (error) {
       setMesajTipi("error")
@@ -106,11 +106,28 @@ export default function GirisciPanel() {
     return { saat, tarih }
   }
 
-  const bekleyecekToSikilacak = async (id) => {
+  const sikilacakYap = async (id) => {
     try {
       await axios.put(`/api/giris-sikilacak/${id}`)
-      setMesaj("Kayıt sıkılacak yapıldı, yağcıya düştü.")
+      setMesajAnim("spin")
+      setMesaj("Yağcıya gönderildi.")
       setMesajTipi("success")
+      setTimeout(() => setMesajAnim("tik"), 1200)
+      setTimeout(() => setMesaj(""), 2500)
+    } catch (e) {
+      setMesajTipi("error")
+      setMesaj(e?.response?.data?.msg || "Güncelleme hatası")
+      setTimeout(() => setMesaj(""), 2500)
+    }
+  }
+
+  const sirayayAl = async (id) => {
+    try {
+      await axios.put(`/api/giris-siraya-al/${id}`)
+      setMesajAnim("spin")
+      setMesaj("Sıraya alındı.")
+      setMesajTipi("success")
+      setTimeout(() => setMesajAnim("tik"), 1200)
       setTimeout(() => setMesaj(""), 2500)
     } catch (e) {
       setMesajTipi("error")
@@ -121,6 +138,33 @@ export default function GirisciPanel() {
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-emerald-50 via-white to-amber-50 p-6 font-sans relative overflow-hidden">
+      {mesaj && (
+        <div className="fixed top-20 left-1/2 transform -translate-x-1/2 z-[9999]">
+          <div className={`px-6 py-4 rounded-2xl shadow-2xl flex items-center gap-3 border-2 ${
+            mesajTipi === "error"
+              ? "bg-gradient-to-r from-red-600 to-red-700 text-white border-red-400/30"
+              : "bg-gradient-to-r from-emerald-600 to-emerald-700 text-white border-emerald-400/30"
+          }`}>
+            {mesajTipi !== "error" && (
+              <div className="relative w-6 h-6 flex-shrink-0">
+                {mesajAnim === "spin" ? (
+                  <svg className="w-6 h-6 animate-spin" viewBox="0 0 24 24" fill="none">
+                    <circle cx="12" cy="12" r="10" stroke="white" strokeOpacity="0.3" strokeWidth="2.5" />
+                    <path d="M12 2a10 10 0 0 1 10 10" stroke="white" strokeWidth="2.5" strokeLinecap="round" />
+                  </svg>
+                ) : (
+                  <svg className="w-6 h-6 anim-pop-in" viewBox="0 0 24 24" fill="none">
+                    <circle cx="12" cy="12" r="10" stroke="white" strokeWidth="2.5" className="anim-circle-draw" />
+                    <path d="M7 12l3.5 3.5L17 9" stroke="white" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" className="anim-check-draw" />
+                  </svg>
+                )}
+              </div>
+            )}
+            <span className="font-bold text-base">{mesaj}</span>
+          </div>
+        </div>
+      )}
+
       <div className="absolute inset-0 opacity-[0.03] pointer-events-none">
         <div
           className="absolute inset-0"
@@ -201,18 +245,6 @@ export default function GirisciPanel() {
           <div className="absolute inset-0 bg-gradient-to-br from-emerald-50/30 to-amber-50/30 pointer-events-none"></div>
 
           <div className="relative z-10">
-            {mesaj && (
-              <div
-                className={`mb-6 flex items-center justify-center gap-3 p-5 rounded-2xl shadow-lg border-2 ${mesajTipi === "error"
-                  ? "bg-red-50 border-red-300 text-red-700"
-                  : "bg-gradient-to-r from-emerald-50 to-emerald-100 border-emerald-300 text-emerald-700"
-                  }`}
-              >
-                <span className="text-2xl">{mesajTipi === "error" ? "❌" : "✅"}</span>
-                <p className="font-bold text-lg">{mesaj}</p>
-              </div>
-            )}
-
             {activeTab === "form" && (
               <div className="max-w-lg mx-auto space-y-8 animate-fadeIn">
                 <form onSubmit={handleSubmit} className="space-y-6">
@@ -291,33 +323,29 @@ export default function GirisciPanel() {
                     <div className="grid grid-cols-2 gap-3">
                       <button
                         type="button"
-                        onClick={() =>
-                          setFormData((p) => ({ ...p, giris_durum: "sikilacak" }))
-                        }
+                        onClick={() => setFormData((p) => ({ ...p, giris_durum: "sikilacak" }))}
                         className={`px-4 py-4 rounded-2xl border-2 font-black transition shadow-sm ${formData.giris_durum === "sikilacak"
                           ? "border-emerald-500 bg-emerald-50 text-emerald-700"
                           : "border-slate-200 bg-white text-slate-600 hover:bg-slate-50"
-                          }`}
+                        }`}
                       >
                         Sıkılacak
                         <div className="text-xs font-bold opacity-70 mt-1">
-                          Yağcıya direkt gitsin
+                          Sıraya alınacak
                         </div>
                       </button>
 
                       <button
                         type="button"
-                        onClick={() =>
-                          setFormData((p) => ({ ...p, giris_durum: "bekleyecek" }))
-                        }
+                        onClick={() => setFormData((p) => ({ ...p, giris_durum: "bekleyecek" }))}
                         className={`px-4 py-4 rounded-2xl border-2 font-black transition shadow-sm ${formData.giris_durum === "bekleyecek"
                           ? "border-indigo-500 bg-indigo-50 text-indigo-700"
                           : "border-slate-200 bg-white text-slate-600 hover:bg-slate-50"
-                          }`}
+                        }`}
                       >
                         Bekleyecek
                         <div className="text-xs font-bold opacity-70 mt-1">
-                          Sonradan yağcıya gönder
+                          Sonradan sıraya alınacak
                         </div>
                       </button>
                     </div>
@@ -455,22 +483,22 @@ export default function GirisciPanel() {
                     <table className="min-w-full">
                       <thead className="bg-gradient-to-r from-slate-50 to-slate-100 border-b-2 border-slate-200">
                         <tr>
-                          <th className="px-6 py-4 text-left text-xs font-bold text-slate-600 uppercase tracking-wider">
+                          <th className="px-5 py-4 text-left text-sm font-bold text-slate-600 uppercase tracking-wider">
                             Müşteri No
                           </th>
-                          <th className="px-6 py-4 text-left text-xm font-bold text-slate-600 uppercase tracking-wider">
+                          <th className="px-5 py-4 text-left text-sm font-bold text-slate-600 uppercase tracking-wider">
                             İsim / Telefon
                           </th>
-                          <th className="px-6 py-4 text-left text-xm font-bold text-slate-600 uppercase tracking-wider">
+                          <th className="px-5 py-4 text-left text-sm font-bold text-slate-600 uppercase tracking-wider">
                             Giriş Saati
                           </th>
-                          <th className="px-6 py-4 text-center text-xs font-bold text-slate-600 uppercase tracking-wider">
+                          <th className="px-5 py-4 text-center text-sm font-bold text-slate-600 uppercase tracking-wider">
                             Durum
                           </th>
-                          <th className="px-6 py-4 text-center text-xs font-bold text-slate-600 uppercase tracking-wider">
-                            Ödeme Tipi
+                          <th className="px-5 py-4 text-center text-sm font-bold text-slate-600 uppercase tracking-wider">
+                            Ödeme
                           </th>
-                          <th className="px-6 py-4 text-center text-xs font-bold text-slate-600 uppercase tracking-wider">
+                          <th className="px-5 py-4 text-center text-sm font-bold text-slate-600 uppercase tracking-wider">
                             İşlem
                           </th>
                         </tr>
@@ -487,43 +515,46 @@ export default function GirisciPanel() {
                           .map((kayit) => {
                             const { saat, tarih } = formatTarihSaat(kayit.created_at)
 
-                            const isBekleyecek = kayit.status === 0
+                            const isBekleyecek = kayit.status === 0 && kayit.giris_durum === "bekleyecek"
+                            const isSiraBekliyor = kayit.status === 0 && kayit.giris_durum !== "bekleyecek"
                             const isSirada = kayit.status === 1
 
                             const statusText = isBekleyecek
                               ? "Bekleyecek"
-                              : isSirada
-                                ? "Sırada"
-                                : "Çıkışta"
+                              : isSiraBekliyor
+                                ? "Sıra Bekliyor"
+                                : isSirada
+                                  ? "Sırada"
+                                  : "Çıkışta"
 
                             const statusColor = isBekleyecek
-                              ? "bg-gradient-to-r from-indigo-100 to-indigo-200 text-indigo-800 border-indigo-300"
-                              : isSirada
-                                ? "bg-gradient-to-r from-yellow-100 to-yellow-200 text-yellow-800 border-yellow-300"
-                                : "bg-gradient-to-r from-red-200 to-red-300 text-red-900 border-red-300"
+                              ? "bg-gradient-to-r from-blue-100 to-blue-200 text-blue-800 border-blue-400"
+                              : isSiraBekliyor
+                                ? "bg-gradient-to-r from-emerald-100 to-emerald-200 text-emerald-800 border-emerald-300"
+                                : isSirada
+                                  ? "bg-gradient-to-r from-yellow-100 to-yellow-200 text-yellow-800 border-yellow-300"
+                                  : "bg-gradient-to-r from-red-200 to-red-300 text-red-900 border-red-300"
 
                             return (
                               <tr key={kayit.id} className="hover:bg-slate-50 transition duration-150">
-                                <td className="px-6 py-4">
-                                  <span className="text-xl font-black text-slate-800 tracking-wide bg-slate-100 px-3 py-1 rounded-xl border border-slate-200">
+                                <td className="px-5 py-4">
+                                  <span className="text-xl font-black text-slate-800 tracking-wide bg-slate-100 px-3 py-1.5 rounded-xl border border-slate-200">
                                     #{kayit.musteri_no}
                                   </span>
                                 </td>
 
-                                <td className="px-6 py-4">
+                                <td className="px-5 py-4">
                                   <div className="flex flex-col">
-                                    <span className="text-lg font-bold text-slate-700">
+                                    <span className="text-base font-bold text-slate-700">
                                       {kayit.ad_soyad}
                                     </span>
-                                    <div className="flex items-center gap-2 mt-0.5">
-                                      <span className="text-lg font-bold text-slate-500">
-                                        {kayit.telefon ? formatTelefonTR(kayit.telefon) : "-"}
-                                      </span>
-                                    </div>
+                                    <span className="text-base font-semibold text-slate-500">
+                                      {kayit.telefon ? formatTelefonTR(kayit.telefon) : "-"}
+                                    </span>
                                   </div>
                                 </td>
 
-                                <td className="px-6 py-4">
+                                <td className="px-5 py-4">
                                   <div className="flex flex-col">
                                     <span className="text-base font-bold text-slate-800 flex items-center gap-1">
                                       <svg className="w-4 h-4 text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -536,16 +567,18 @@ export default function GirisciPanel() {
                                       </svg>
                                       {saat}
                                     </span>
-                                    <span className="text-sm font-bold text-slate-500 pl-5">{tarih}</span>
+                                    <span className="text-sm font-semibold text-slate-500 pl-5">{tarih}</span>
                                   </div>
                                 </td>
 
-                                <td className="px-6 py-4 text-center">
+                                <td className="px-5 py-4 text-center">
                                   <span
-                                    className={`inline-flex items-center px-4 py-1.5 border-2 rounded-full text-xs font-black uppercase tracking-wide shadow-md ${statusColor}`}
+                                    className={`inline-flex items-center px-4 py-1.5 border-2 rounded-full text-sm font-black uppercase tracking-wide shadow-sm ${statusColor}`}
                                   >
                                     {isBekleyecek ? (
-                                      <span className="w-2 h-2 rounded-full bg-indigo-500 mr-2 shadow-lg"></span>
+                                      <span className="w-2 h-2 rounded-full bg-blue-500 mr-2 shadow-lg"></span>
+                                    ) : isSiraBekliyor ? (
+                                      <span className="w-2 h-2 rounded-full bg-emerald-500 mr-2 animate-pulse shadow-lg"></span>
                                     ) : isSirada ? (
                                       <span className="w-2 h-2 rounded-full bg-amber-500 mr-2 animate-pulse shadow-lg"></span>
                                     ) : (
@@ -555,8 +588,8 @@ export default function GirisciPanel() {
                                   </span>
                                 </td>
 
-                                <td className="px-6 py-4 text-center">
-                                  <span className={`inline-flex items-center px-3 py-1.5 rounded-lg text-xs font-black uppercase tracking-wider border ${
+                                <td className="px-5 py-4 text-center">
+                                  <span className={`inline-flex items-center px-3 py-1.5 rounded-lg text-sm font-black uppercase tracking-wider border ${
                                     (kayit.odeme_tipi || 'yag') === 'yag'
                                       ? "bg-blue-100 text-blue-700 border-blue-300"
                                       : "bg-red-100 text-red-700 border-red-300"
@@ -565,16 +598,23 @@ export default function GirisciPanel() {
                                   </span>
                                 </td>
 
-                                <td className="px-6 py-4 text-center">
-                                  {isBekleyecek ? (
+                                <td className="px-5 py-4 text-center">
+                                  {isSiraBekliyor ? (
                                     <button
-                                      onClick={() => bekleyecekToSikilacak(kayit.id)}
-                                      className="px-4 py-2 rounded-xl font-black text-xs bg-gradient-to-r from-emerald-500 to-emerald-600 text-white shadow-md hover:scale-[1.02] active:scale-[0.98] transition"
+                                      onClick={() => sikilacakYap(kayit.id)}
+                                      className="px-4 py-2 rounded-xl font-black text-sm bg-gradient-to-r from-emerald-500 to-emerald-600 text-white shadow-md hover:scale-[1.02] active:scale-[0.98] transition whitespace-nowrap"
                                     >
                                       SIKILACAK YAP
                                     </button>
+                                  ) : isBekleyecek ? (
+                                    <button
+                                      onClick={() => sirayayAl(kayit.id)}
+                                      className="px-4 py-2 rounded-xl font-black text-sm bg-gradient-to-r from-blue-500 to-blue-600 text-white shadow-md hover:scale-[1.02] active:scale-[0.98] transition whitespace-nowrap"
+                                    >
+                                      SIRAYA AL
+                                    </button>
                                   ) : (
-                                    <span className="text-xs font-bold text-slate-400">-</span>
+                                    <span className="text-sm font-bold text-slate-400">-</span>
                                   )}
                                 </td>
                               </tr>

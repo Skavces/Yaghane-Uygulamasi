@@ -1,40 +1,31 @@
-export function hesaplaYagIslemi({ cikanYag, zeytin, hakOran, yagFiyati, odemeTipi }) {
-  const cikan  = parseFloat(cikanYag)  || 0
-  const zey    = parseFloat(zeytin)    || 0
-  const oran   = parseFloat(hakOran)   || 0
-  const fiyat  = parseFloat(yagFiyati) || 0
-  const tip    = odemeTipi || "yag"
-  const netYag = Math.max(0, cikan)
+export function hesaplaYagIslemi({ cikanYag, zeytin, hakOran, yagFiyati, odemeTipi, bidonSayisi }) {
+  const kantarYag = parseFloat(cikanYag)   || 0
+  const zey       = parseFloat(zeytin)     || 0
+  const oran      = parseFloat(hakOran)    || 0
+  const fiyat     = parseFloat(yagFiyati)  || 0
+  const tip       = odemeTipi || "yag"
+  const bidon     = parseInt(bidonSayisi)  || 0
 
-  let initialKalan
-  if (tip === "para") {
-    initialKalan = netYag
-  } else {
-    const initialHak = Math.round((netYag * oran) / 100)
-    initialKalan = Math.max(0, netYag - initialHak)
-  }
-  const bidonSayisi  = initialKalan > 0 ? Math.ceil(initialKalan / 50) : 0
-  const bidonTare    = bidonSayisi * 2
+  // 1. Net yağ = kantar yağ - bidon tare
+  const netYag = Math.max(0, kantarYag - bidon * 2)
 
-  const adjustedYag  = Math.max(0, netYag - bidonTare)
-  const hakKGraw     = (adjustedYag * oran) / 100
-  const hakKGround   = Math.round(hakKGraw)
+  // 2. Hak hesabı
+  const hakKGraw   = (netYag * oran) / 100
+  const hakKGround = Math.round(hakKGraw)
 
   const paraTL = (hakKGround * fiyat).toFixed(0)
   const yagTL  = (hakKGround * fiyat).toFixed(2)
 
-  let musteriKalan
-  if (tip === "para") {
-    const parabidonSayisi = netYag > 0 ? Math.ceil(netYag / 50) : 0
-    musteriKalan = Math.max(0, netYag - parabidonSayisi * 2)
-  } else {
-    musteriKalan = Math.max(0, netYag - hakKGround)
-  }
-  musteriKalan = Math.round(musteriKalan)
+  // 3. Müşteriye kalan
+  const musteriKalan = Math.round(
+    tip === "para"
+      ? netYag
+      : Math.max(0, netYag - hakKGround)
+  )
 
   const verilecekBidon = musteriKalan > 0 ? Math.ceil(musteriKalan / 50) : 0
 
-  const randiman = zey > 0 && cikan > 0 ? (cikan / zey) * 100 : 0
+  const randiman = zey > 0 && kantarYag > 0 ? (kantarYag / zey) * 100 : 0
 
   return {
     netYag,

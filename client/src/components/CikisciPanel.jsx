@@ -12,6 +12,7 @@ export default function CikisciPanel({ defaultSettings }) {
   const [tumListe, setTumListe] = useState([])
   const [seciliIslem, setSeciliIslem] = useState(null)
   const [mesaj, setMesaj] = useState("")
+  const [mesajAnim, setMesajAnim] = useState("spin")
   const [aktifTab, setAktifTab] = useState("bekleyen")
   const [bekleyenMusteriAra, setBekleyenMusteriAra] = useState("")
   const [gecmisTelefonAra, setGecmisTelefonAra] = useState("")
@@ -131,6 +132,7 @@ export default function CikisciPanel({ defaultSettings }) {
     }
     try {
       await axios.post("/api/yag-satisi", satisForm)
+      setMesajAnim("spin")
       setMesaj("Satış başarıyla kaydedildi.")
       setSatisModalAcik(false)
       setSatisForm({
@@ -145,6 +147,7 @@ export default function CikisciPanel({ defaultSettings }) {
       setGecmisTelefonAra("")
       setBekleyenMusteriAra("")
       fetchListe()
+      setTimeout(() => setMesajAnim("tik"), 1200)
       setTimeout(() => setMesaj(""), 3000)
     } catch {
       alert("Satış kaydedilirken hata oluştu")
@@ -177,9 +180,11 @@ export default function CikisciPanel({ defaultSettings }) {
     if (!seciliIslem) return
     try {
       await axios.put(`/api/cikis/${seciliIslem.id}`)
+      setMesajAnim("spin")
       setMesaj(`${seciliIslem.ad_soyad} işlemi tamamlandı!`)
       setSeciliIslem(null)
       fetchListe()
+      setTimeout(() => setMesajAnim("tik"), 1200)
       setTimeout(() => setMesaj(""), 3000)
     } catch {
       alert("İşlem sırasında hata oluştu")
@@ -212,11 +217,12 @@ export default function CikisciPanel({ defaultSettings }) {
   const calculateYagIslemi = (islem) => {
     if (!islem) return null
     return hesaplaYagIslemi({
-      cikanYag:  islem.cikan_yag,
-      zeytin:    islem.zeytin_kg,
-      hakOran:   islem.hak_oran,
-      yagFiyati: islem.yag_fiyati,
-      odemeTipi: islem.odeme_tipi,
+      cikanYag:    islem.cikan_yag,
+      zeytin:      islem.zeytin_kg,
+      hakOran:     islem.hak_oran,
+      yagFiyati:   islem.yag_fiyati,
+      odemeTipi:   islem.odeme_tipi,
+      bidonSayisi: islem.kantar_bidon,
     })
   }
 
@@ -361,9 +367,10 @@ export default function CikisciPanel({ defaultSettings }) {
     const hesap = calculateYagIslemi(seciliIslem)
     if (!hesap) return { hakKGround: 0, paraTL: "0.00" }
 
-    return { 
-      hakKGround: hesap.hakKGround, 
-      paraTL: hesap.paraTL 
+    return {
+      hakKGround: hesap.hakKGround,
+      paraTL: hesap.paraTL,
+      netYag: hesap.netYag,
     }
   }, [seciliIslem])
 
@@ -550,10 +557,12 @@ export default function CikisciPanel({ defaultSettings }) {
       const payload = { bidon_no: formatBidonList(parseBidonList(bidonEdit)) }
       await axios.put(`/api/bidon-no/${seciliIslem.id}`, payload)
 
+      setMesajAnim("spin")
       setMesaj("Bidon numaraları güncellendi.")
       setSeciliIslem((prev) => (prev ? { ...prev, bidon_no: payload.bidon_no } : prev))
       fetchListe()
       setIsEditing(false)
+      setTimeout(() => setMesajAnim("tik"), 1200)
       setTimeout(() => setMesaj(""), 2500)
     } catch (e) {
       console.error(e)
@@ -585,11 +594,13 @@ export default function CikisciPanel({ defaultSettings }) {
 
       await axios.put(`/api/bidon-iade/${seciliIslem.id}`, payload)
 
+      setMesajAnim("spin")
       setMesaj("Bidon iadesi kaydedildi.")
       setIadeModalAcik(false)
       setIadeAdet("")
       setSeciliIslem((prev) => (prev ? { ...prev, iade_bidonlar: payload.iade_bidonlar } : prev))
       fetchListe()
+      setTimeout(() => setMesajAnim("tik"), 1200)
       setTimeout(() => setMesaj(""), 3000)
     } catch (e) {
       console.error(e)
@@ -603,11 +614,13 @@ export default function CikisciPanel({ defaultSettings }) {
       const payload = { iade_bidonlar: "" }
       await axios.put(`/api/bidon-iade/${seciliIslem.id}`, payload)
 
+      setMesajAnim("spin")
       setMesaj("İadeler temizlendi.")
       setIadeModalAcik(false)
       setIadeAdet("")
       setSeciliIslem((prev) => (prev ? { ...prev, iade_bidonlar: "" } : prev))
       fetchListe()
+      setTimeout(() => setMesajAnim("tik"), 1200)
       setTimeout(() => setMesaj(""), 3000)
     } catch (err) {
       console.error(err)
@@ -1084,8 +1097,21 @@ export default function CikisciPanel({ defaultSettings }) {
 
       <div className={`${aktifTab === "bidonlar" ? "w-3/4" : "w-1/2"} flex flex-col h-full overflow-hidden relative transition-all duration-300`}>
         {mesaj && (
-          <div className="fixed top-6 left-1/2 transform -translate-x-1/2 z-[9999]">
+          <div className="fixed top-20 left-1/2 transform -translate-x-1/2 z-[9999]">
             <div className="bg-gradient-to-r from-emerald-600 to-emerald-700 text-white px-6 py-4 rounded-2xl shadow-2xl flex items-center gap-3 border-2 border-emerald-400/30 backdrop-blur-sm">
+              <div className="relative w-6 h-6 flex-shrink-0">
+                {mesajAnim === "spin" ? (
+                  <svg className="w-6 h-6 animate-spin" viewBox="0 0 24 24" fill="none">
+                    <circle cx="12" cy="12" r="10" stroke="white" strokeOpacity="0.3" strokeWidth="2.5" />
+                    <path d="M12 2a10 10 0 0 1 10 10" stroke="white" strokeWidth="2.5" strokeLinecap="round" />
+                  </svg>
+                ) : (
+                  <svg className="w-6 h-6 anim-pop-in" viewBox="0 0 24 24" fill="none">
+                    <circle cx="12" cy="12" r="10" stroke="white" strokeWidth="2.5" className="anim-circle-draw" />
+                    <path d="M7 12l3.5 3.5L17 9" stroke="white" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" className="anim-check-draw" />
+                  </svg>
+                )}
+              </div>
               <span className="font-bold text-base">{mesaj}</span>
             </div>
           </div>
@@ -1241,6 +1267,19 @@ export default function CikisciPanel({ defaultSettings }) {
 
                   <div className="grid grid-cols-2 gap-4">
                     <div className="bg-white/80 backdrop-blur-sm p-4 rounded-2xl border-2 border-slate-200 shadow-lg text-center">
+                      <label className="block text-lg font-bold text-slate-700 mb-1">Kantarda Bidon Sayısı</label>
+                      <div className="text-4xl font-black text-slate-800">{seciliIslem.kantar_bidon ?? "—"}</div>
+                    </div>
+                    <div>
+                      <label className="block text-lg font-bold text-slate-700 mb-1 text-center">Net Yağ (KG)</label>
+                      <div className="bg-gradient-to-br from-blue-50 to-blue-100/50 p-4 rounded-2xl border-2 border-blue-300 shadow-lg text-center">
+                        <div className="text-4xl font-black text-blue-900">{hesapDetay.netYag}</div>
+                      </div>
+                    </div>
+                  </div>
+
+                  <div className="grid grid-cols-2 gap-4">
+                    <div className="bg-white/80 backdrop-blur-sm p-4 rounded-2xl border-2 border-slate-200 shadow-lg text-center">
                       <label className="block text-lg font-bold text-slate-700 mb-1">Hak Oranı</label>
                       <div className="text-4xl font-black text-slate-800">%{seciliIslem.hak_oran}</div>
                     </div>
@@ -1254,7 +1293,7 @@ export default function CikisciPanel({ defaultSettings }) {
                     <div
                       className={`p-6 rounded-2xl border-2 transition-all text-center transform ${seciliIslem.odeme_tipi === "yag"
                         ? "border-blue-500 bg-gradient-to-br from-blue-50 to-blue-100/50 shadow-xl shadow-blue-500/20"
-                        : "border-slate-200 bg-white/60 opacity-60"
+                        : "border-slate-200 bg-white/60 opacity-30"
                         }`}
                     >
                       <p className="text-sm font-bold uppercase tracking-wide text-slate-600 mb-2">
@@ -1274,7 +1313,7 @@ export default function CikisciPanel({ defaultSettings }) {
                     <div
                       className={`p-6 rounded-2xl border-2 transition-all text-center transform ${seciliIslem.odeme_tipi === "para"
                         ? "border-red-500 bg-gradient-to-br from-red-50 to-red-100/50 shadow-xl shadow-red-500/20"
-                        : "border-slate-200 bg-white/60 opacity-60"
+                        : "border-slate-200 bg-white/60 opacity-30"
                         }`}
                     >
                       <p className="text-sm font-bold uppercase tracking-wide text-slate-600 mb-2">

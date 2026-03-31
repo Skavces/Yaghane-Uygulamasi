@@ -41,7 +41,7 @@ function App() {
           <div className="flex justify-between items-center">
             { }
             <div className="flex items-center gap-3">
-              <span className="text-4xl">🫒</span>
+              <img src="/zeytin-logo.svg" alt="logo" className="w-10 h-10" />
               <div>
                 <h1 className="text-xl font-black text-white">
                   KAYA KARDEŞLER

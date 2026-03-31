@@ -17,6 +17,7 @@ export default function YagciPanel({ defaultSettings }) {
   const [formData, setFormData] = useState({
     zeytin_kg: "",
     cikan_yag: "",
+    kantar_bidon: "",
     hak_oran: defOran,
     yag_fiyati: defFiyat,
     firma_hakki: "",
@@ -35,6 +36,7 @@ export default function YagciPanel({ defaultSettings }) {
   })
 
   const [mesaj, setMesaj] = useState("")
+  const [mesajAnim, setMesajAnim] = useState("spin")
   const [hata, setHata] = useState("")
   const [musteriNoAra, setMusteriNoAra] = useState("")
   const fetchBekleyenler = async () => {
@@ -83,24 +85,27 @@ export default function YagciPanel({ defaultSettings }) {
 
   function calculateValues(vals) {
     return hesaplaYagIslemi({
-      cikanYag:  vals.cikan_yag,
-      zeytin:    vals.zeytin_kg,
-      hakOran:   vals.hak_oran,
-      yagFiyati: vals.yag_fiyati,
-      odemeTipi: vals.odeme_tipi,
+      cikanYag:    vals.cikan_yag,
+      zeytin:      vals.zeytin_kg,
+      hakOran:     vals.hak_oran,
+      yagFiyati:   vals.yag_fiyati,
+      odemeTipi:   vals.odeme_tipi,
+      bidonSayisi: vals.kantar_bidon,
     })
   }
 
   const hesap = useMemo(() => {
     return calculateValues({
-      zeytin_kg: formData.zeytin_kg,
-      cikan_yag: formData.cikan_yag,
-      hak_oran: formData.hak_oran,
-      yag_fiyati: formData.yag_fiyati,
-      odeme_tipi: formData.odeme_tipi
+      zeytin_kg:    formData.zeytin_kg,
+      cikan_yag:    formData.cikan_yag,
+      kantar_bidon: formData.kantar_bidon,
+      hak_oran:     formData.hak_oran,
+      yag_fiyati:   formData.yag_fiyati,
+      odeme_tipi:   formData.odeme_tipi
     })
   }, [
     formData.cikan_yag,
+    formData.kantar_bidon,
     formData.hak_oran,
     formData.yag_fiyati,
     formData.odeme_tipi,
@@ -109,11 +114,12 @@ export default function YagciPanel({ defaultSettings }) {
 
   useEffect(() => {
     const val = calculateValues({
-      zeytin_kg: formData.zeytin_kg,
-      cikan_yag: formData.cikan_yag,
-      hak_oran: formData.hak_oran,
-      yag_fiyati: formData.yag_fiyati,
-      odeme_tipi: formData.odeme_tipi
+      zeytin_kg:    formData.zeytin_kg,
+      cikan_yag:    formData.cikan_yag,
+      kantar_bidon: formData.kantar_bidon,
+      hak_oran:     formData.hak_oran,
+      yag_fiyati:   formData.yag_fiyati,
+      odeme_tipi:   formData.odeme_tipi
     })
 
     setFormData((prev) => {
@@ -136,6 +142,7 @@ export default function YagciPanel({ defaultSettings }) {
 
   }, [
     formData.cikan_yag,
+    formData.kantar_bidon,
     formData.zeytin_kg,
     formData.hak_oran,
     formData.yag_fiyati,
@@ -159,9 +166,11 @@ export default function YagciPanel({ defaultSettings }) {
 
     try {
       await axios.put(`/api/yag-islem/${secili.id}`, formData)
+      setMesajAnim("spin")
       setMesaj(`${secili.ad_soyad} işlemi tamamlandı`)
       setSecili(null)
       await fetchBekleyenler()
+      setTimeout(() => setMesajAnim("tik"), 1200)
       setTimeout(() => setMesaj(""), 2500)
     } catch {
       setHata("Kayıt sırasında hata oluştu")
@@ -285,44 +294,31 @@ export default function YagciPanel({ defaultSettings }) {
           </p>
         </div>
 
-        {(hata || mesaj) && (
-          <div className="mb-6">
-            {hata && (
-              <div className="p-4 bg-red-50 border-2 border-red-200 rounded-2xl backdrop-blur-sm shadow-lg animate-shake">
-                <div className="flex items-center gap-3">
-                  <svg
-                    className="w-5 h-5 text-red-500 flex-shrink-0"
-                    fill="currentColor"
-                    viewBox="0 0 20 20"
-                  >
-                    <path
-                      fillRule="evenodd"
-                      d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z"
-                      clipRule="evenodd"
-                    />
+        {hata && (
+          <div className="fixed top-20 left-1/2 transform -translate-x-1/2 z-[9999]">
+            <div className="bg-gradient-to-r from-red-600 to-red-700 text-white px-6 py-4 rounded-2xl shadow-2xl flex items-center gap-3 border-2 border-red-400/30 backdrop-blur-sm">
+              <span className="font-bold text-base">{hata}</span>
+            </div>
+          </div>
+        )}
+        {mesaj && (
+          <div className="fixed top-20 left-1/2 transform -translate-x-1/2 z-[9999]">
+            <div className="bg-gradient-to-r from-emerald-600 to-emerald-700 text-white px-6 py-4 rounded-2xl shadow-2xl flex items-center gap-3 border-2 border-emerald-400/30 backdrop-blur-sm">
+              <div className="relative w-6 h-6 flex-shrink-0">
+                {mesajAnim === "spin" ? (
+                  <svg className="w-6 h-6 animate-spin" viewBox="0 0 24 24" fill="none">
+                    <circle cx="12" cy="12" r="10" stroke="white" strokeOpacity="0.3" strokeWidth="2.5" />
+                    <path d="M12 2a10 10 0 0 1 10 10" stroke="white" strokeWidth="2.5" strokeLinecap="round" />
                   </svg>
-                  <p className="text-sm text-red-700 font-semibold">{hata}</p>
-                </div>
-              </div>
-            )}
-            {mesaj && (
-              <div className="p-4 bg-green-50 border-2 border-green-200 rounded-2xl backdrop-blur-sm shadow-lg">
-                <div className="flex items-center gap-3">
-                  <svg
-                    className="w-5 h-5 text-green-500 flex-shrink-0"
-                    fill="currentColor"
-                    viewBox="0 0 20 20"
-                  >
-                    <path
-                      fillRule="evenodd"
-                      d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z"
-                      clipRule="evenodd"
-                    />
+                ) : (
+                  <svg className="w-6 h-6 anim-pop-in" viewBox="0 0 24 24" fill="none">
+                    <circle cx="12" cy="12" r="10" stroke="white" strokeWidth="2.5" className="anim-circle-draw" />
+                    <path d="M7 12l3.5 3.5L17 9" stroke="white" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" className="anim-check-draw" />
                   </svg>
-                  <p className="text-sm text-green-700 font-semibold">{mesaj}</p>
-                </div>
+                )}
               </div>
-            )}
+              <span className="font-bold text-base">{mesaj}</span>
+            </div>
           </div>
         )}
 
@@ -524,6 +520,30 @@ export default function YagciPanel({ defaultSettings }) {
                   <div className="grid grid-cols-2 gap-4">
                     <div>
                       <label className="block text-lg font-bold text-slate-700 mb-2 text-center">
+                        Kantarda Bidon Sayısı
+                      </label>
+                      <input
+                        type="number"
+                        name="kantar_bidon"
+                        value={formData.kantar_bidon}
+                        onChange={handleChange}
+                        className="w-full px-5 py-4 bg-white border-2 border-slate-200 rounded-2xl text-3xl font-bold text-slate-800 text-center focus:outline-none focus:border-blue-400 transition-all shadow-sm hover:shadow-md"
+                        placeholder="0"
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-lg font-bold text-slate-700 mb-2 text-center">Net Yağ (KG)</label>
+                      <div className="bg-gradient-to-br from-blue-50 to-blue-100/50 border-2 border-blue-300 rounded-2xl px-5 py-4 text-center shadow-sm">
+                        <div className="text-3xl font-black text-blue-900">
+                          {formData.cikan_yag ? hesap.netYag : "—"}
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+
+                  <div className="grid grid-cols-2 gap-4">
+                    <div>
+                      <label className="block text-lg font-bold text-slate-700 mb-2 text-center">
                         Hak Oranı (%)
                       </label>
                       <input
@@ -557,7 +577,7 @@ export default function YagciPanel({ defaultSettings }) {
                       }
                       className={`p-6 rounded-2xl border-2 transition-all text-center transform hover:scale-[1.02] ${formData.odeme_tipi === "yag"
                         ? "border-blue-500 bg-gradient-to-br from-blue-50 to-blue-100/50 shadow-xl shadow-blue-500/20"
-                        : "border-slate-200 bg-white/60 hover:border-slate-300 hover:shadow-lg"
+                        : "border-slate-200 bg-white/60 opacity-40 hover:opacity-60"
                         }`}
                     >
                       <p className="text-sm font-bold uppercase tracking-wide text-blue-600 mb-2">
@@ -580,7 +600,7 @@ export default function YagciPanel({ defaultSettings }) {
                       }
                       className={`p-6 rounded-2xl border-2 transition-all text-center transform hover:scale-[1.02] ${formData.odeme_tipi === "para"
                         ? "border-red-500 bg-gradient-to-br from-red-50 to-red-100/50 shadow-xl shadow-red-500/20"
-                        : "border-slate-200 bg-white/60 hover:border-slate-300 hover:shadow-lg"
+                        : "border-slate-200 bg-white/60 opacity-40 hover:opacity-60"
                         }`}
                     >
                       <p className="text-sm font-bold uppercase tracking-wide text-red-600 mb-2">

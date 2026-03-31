@@ -103,6 +103,22 @@ db.serialize(() => {
     }
   })
 
+  db.run(`ALTER TABLE islemler ADD COLUMN giris_durum TEXT DEFAULT 'sikilacak'`, (err) => {
+    if (err) {
+      if (!String(err.message || "").toLowerCase().includes("duplicate")) {
+        console.error("giris_durum kolon ekleme hatası:", err.message)
+      }
+    }
+  })
+
+  db.run(`ALTER TABLE islemler ADD COLUMN kantar_bidon INTEGER DEFAULT 0`, (err) => {
+    if (err) {
+      if (!String(err.message || "").toLowerCase().includes("duplicate")) {
+        console.error("kantar_bidon kolon ekleme hatası:", err.message)
+      }
+    }
+  })
+
   db.run(
     `
     CREATE UNIQUE INDEX IF NOT EXISTS uniq_active_musteri_no
@@ -235,13 +251,14 @@ app.post("/api/giris", (req, res) => {
     return res.status(400).json({ msg: "Eksik bilgi" })
   }
 
-  const status = giris_durum === "bekleyecek" ? 0 : 1
+  const status = 0
   const tel = normalizeTelefonTR(telefon)
   const odeme = odeme_tipi || "yag"
+  const durum = giris_durum || "sikilacak"
 
   db.run(
-    "INSERT INTO islemler (musteri_no, ad_soyad, telefon, status, created_at, odeme_tipi) VALUES (?, ?, ?, ?, ?, ?)",
-    [musteri_no, ad_soyad, tel || "", status, turkeyTime, odeme],
+    "INSERT INTO islemler (musteri_no, ad_soyad, telefon, status, created_at, odeme_tipi, giris_durum) VALUES (?, ?, ?, ?, ?, ?, ?)",
+    [musteri_no, ad_soyad, tel || "", status, turkeyTime, odeme, durum],
     function (err) {
       if (err) {
         if (err.message && err.message.includes("UNIQUE")) {
@@ -258,17 +275,34 @@ app.post("/api/giris", (req, res) => {
   )
 })
 
+// Bekleyecek → Sıra Bekliyor (giris_durum=sikilacak, status=0 kalır)
+app.put("/api/giris-siraya-al/:id", (req, res) => {
+  const id = req.params.id
+  db.run(
+    "UPDATE islemler SET giris_durum='sikilacak' WHERE id=? AND status=0 AND giris_durum='bekleyecek'",
+    [id],
+    function (err) {
+      if (err) return res.status(500).json(err)
+      if (this.changes === 0) return res.status(400).json({ msg: "Kayıt bekleyecek durumda değil." })
+      io.emit("veri-guncellendi")
+      res.json({ msg: "Sıraya alındı." })
+    }
+  )
+})
+
+// Sıra Bekliyor → Yağcı Paneli (status=1)
 app.put("/api/giris-sikilacak/:id", (req, res) => {
   const id = req.params.id
-
-  db.run("UPDATE islemler SET status=1 WHERE id=? AND status=0", [id], function (err) {
-    if (err) return res.status(500).json(err)
-    if (this.changes === 0) {
-      return res.status(400).json({ msg: "Kayıt bekleyecek durumda değil." })
+  db.run(
+    "UPDATE islemler SET status=1 WHERE id=? AND status=0 AND giris_durum='sikilacak'",
+    [id],
+    function (err) {
+      if (err) return res.status(500).json(err)
+      if (this.changes === 0) return res.status(400).json({ msg: "Kayıt sıra bekliyor durumunda değil." })
+      io.emit("veri-guncellendi")
+      res.json({ msg: "Yağcıya gönderildi." })
     }
-    io.emit("veri-guncellendi")
-    res.json({ msg: "Kayıt sıkılacak olarak işaretlendi." })
-  })
+  )
 })
 
 app.put("/api/yag-islem/:id", (req, res) => {
@@ -282,6 +316,7 @@ app.put("/api/yag-islem/:id", (req, res) => {
     odeme_tipi,
     bidon_no,
     notlar,
+    kantar_bidon,
   } = req.body
 
   const id = req.params.id
@@ -296,6 +331,7 @@ app.put("/api/yag-islem/:id", (req, res) => {
                odeme_tipi=?,
                bidon_no=?,
                notlar=?,
+               kantar_bidon=?,
                status=2
                WHERE id=?`
 
@@ -311,6 +347,7 @@ app.put("/api/yag-islem/:id", (req, res) => {
       odeme_tipi,
       bidon_no,
       notlar,
+      kantar_bidon || 0,
       id,
     ],
     function (err) {
