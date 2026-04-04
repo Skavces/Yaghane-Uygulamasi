@@ -151,7 +151,15 @@ export default function YagciPanel({ defaultSettings }) {
   ])
 
   const handleChange = (e) => {
-    setFormData({ ...formData, [e.target.name]: e.target.value })
+    const { name, value } = e.target
+    const updated = { ...formData, [name]: value }
+    if (name === "cikan_yag") {
+      const parsed = parseFloat(value)
+      if (!isNaN(parsed) && parsed > 0) {
+        updated.kantar_bidon = Math.ceil(parsed / 50)
+      }
+    }
+    setFormData(updated)
   }
 
   const handleKaydet = async () => {
@@ -180,6 +188,21 @@ export default function YagciPanel({ defaultSettings }) {
 
   const bidonRef = useRef(null)
 
+  const countBidon = (str) => {
+    const s = String(str || "").trim()
+    if (!s) return 0
+    const parts = s
+      .replace(/[,\s]+/g, "-")
+      .split("-")
+      .map((x) => x.trim())
+      .filter(Boolean)
+    return parts.length
+  }
+
+  const verilenBidonSayisi = useMemo(() => {
+    return countBidon(formData.bidon_no)
+  }, [formData.bidon_no])
+
   const autoGrowBidon = () => {
     const el = bidonRef.current
     if (!el) return
@@ -204,22 +227,6 @@ export default function YagciPanel({ defaultSettings }) {
     )
   }, [liste, musteriNoAra])
 
-  const countBidon = (str) => {
-    const s = String(str || "").trim()
-    if (!s) return 0
-
-    const parts = s
-      .replace(/[,\s]+/g, "-")
-      .split("-")
-      .map((x) => x.trim())
-      .filter(Boolean)
-
-    return parts.length
-  }
-
-  const verilenBidonSayisi = useMemo(() => {
-    return countBidon(formData.bidon_no)
-  }, [formData.bidon_no])
 
   const normalizeTelefon = (input) => {
     let d = String(input || "").replace(/\D/g, "")

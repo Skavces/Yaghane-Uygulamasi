@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react"
+import { useState, useEffect, useRef } from "react"
 import axios from "axios"
 import io from "socket.io-client"
 
@@ -20,6 +20,10 @@ export default function GirisciPanel() {
   const [mesajTipi, setMesajTipi] = useState("")
   const [mesajAnim, setMesajAnim] = useState("spin")
   const [musteriNoAra, setMusteriNoAra] = useState("")
+  const [acikMenu, setAcikMenu] = useState(null)
+  const [menuPos, setMenuPos] = useState({ top: 0, left: 0 })
+  const [duzenleModal, setDuzenleModal] = useState(null)
+  const menuRef = useRef(null)
 
   const fetchKayitlar = async () => {
     try {
@@ -42,6 +46,17 @@ export default function GirisciPanel() {
     socket.on("veri-guncellendi", fetchKayitlar)
     return () => socket.off("veri-guncellendi", fetchKayitlar)
   }, [])
+
+  useEffect(() => {
+    if (!acikMenu) return
+    const handle = (e) => {
+      if (menuRef.current && !menuRef.current.contains(e.target)) {
+        setAcikMenu(null)
+      }
+    }
+    document.addEventListener("mousedown", handle)
+    return () => document.removeEventListener("mousedown", handle)
+  }, [acikMenu])
 
   const handleSubmit = async (e) => {
     e.preventDefault()
@@ -136,6 +151,57 @@ export default function GirisciPanel() {
     }
   }
 
+  const geriBekleyecek = async (id) => {
+    try {
+      await axios.put(`/api/giris-geri-bekleyecek/${id}`)
+      setMesajAnim("spin")
+      setMesaj("Bekleyecek durumuna alındı.")
+      setMesajTipi("success")
+      setTimeout(() => setMesajAnim("tik"), 1200)
+      setTimeout(() => setMesaj(""), 2500)
+    } catch (e) {
+      setMesajTipi("error")
+      setMesaj(e?.response?.data?.msg || "Güncelleme hatası")
+      setTimeout(() => setMesaj(""), 2500)
+    }
+  }
+
+  const geriSikilacak = async (id) => {
+    try {
+      await axios.put(`/api/giris-geri-sikilacak/${id}`)
+      setMesajAnim("spin")
+      setMesaj("Sıra bekliyor durumuna alındı.")
+      setMesajTipi("success")
+      setTimeout(() => setMesajAnim("tik"), 1200)
+      setTimeout(() => setMesaj(""), 2500)
+    } catch (e) {
+      setMesajTipi("error")
+      setMesaj(e?.response?.data?.msg || "Güncelleme hatası")
+      setTimeout(() => setMesaj(""), 2500)
+    }
+  }
+
+  const duzenleKaydet = async () => {
+    try {
+      await axios.put(`/api/giris-duzenle/${duzenleModal.id}`, {
+        musteri_no: duzenleModal.musteri_no,
+        ad_soyad: duzenleModal.ad_soyad,
+        telefon: duzenleModal.telefon,
+        odeme_tipi: duzenleModal.odeme_tipi,
+      })
+      setMesajAnim("spin")
+      setMesaj("Kayıt güncellendi.")
+      setMesajTipi("success")
+      setDuzenleModal(null)
+      setTimeout(() => setMesajAnim("tik"), 1200)
+      setTimeout(() => setMesaj(""), 2500)
+    } catch (e) {
+      setMesajTipi("error")
+      setMesaj(e?.response?.data?.msg || "Güncelleme hatası")
+      setTimeout(() => setMesaj(""), 2500)
+    }
+  }
+
   return (
     <div className="min-h-screen bg-gradient-to-br from-emerald-50 via-white to-amber-50 p-6 font-sans relative overflow-hidden">
       {mesaj && (
@@ -161,6 +227,121 @@ export default function GirisciPanel() {
               </div>
             )}
             <span className="font-bold text-base">{mesaj}</span>
+          </div>
+        </div>
+      )}
+
+      {acikMenu && (
+        <div
+          ref={menuRef}
+          className="fixed z-[9999] bg-white border border-slate-200 rounded-xl shadow-xl w-40 py-1"
+          style={{ top: menuPos.top, left: menuPos.left }}
+        >
+          {kayitlar.filter(k => k.id === acikMenu).map(kayit => (
+            <button
+              key={kayit.id}
+              onMouseDown={(e) => {
+                e.stopPropagation()
+                setDuzenleModal({ ...kayit })
+                setAcikMenu(null)
+              }}
+              className="w-full text-left px-4 py-2.5 text-sm font-bold text-slate-700 hover:bg-slate-50 flex items-center gap-2"
+            >
+              <svg className="w-4 h-4 text-slate-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
+              </svg>
+              Kaydı Düzenle
+            </button>
+          ))}
+        </div>
+      )}
+
+      {duzenleModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-sm" onClick={() => setDuzenleModal(null)}>
+          <div className="bg-white rounded-3xl shadow-2xl border-2 border-white/60 p-8 w-full max-w-md mx-4 animate-fadeIn" onClick={(e) => e.stopPropagation()}>
+            <div className="flex items-center justify-between mb-6">
+              <h3 className="text-xl font-black text-slate-800">Kaydı Düzenle</h3>
+              <button onClick={() => setDuzenleModal(null)} className="p-2 rounded-xl text-slate-400 hover:text-slate-700 hover:bg-slate-100 transition">
+                <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                </svg>
+              </button>
+            </div>
+
+            <div className="space-y-5">
+              <div>
+                <label className="block text-sm font-bold text-slate-700 mb-2 uppercase tracking-wide">Müşteri Numarası</label>
+                <input
+                  value={duzenleModal.musteri_no}
+                  onChange={(e) => {
+                    const val = e.target.value.replace(/\D/g, "").slice(0, 3)
+                    setDuzenleModal((p) => ({ ...p, musteri_no: val }))
+                  }}
+                  maxLength={3}
+                  className="w-full px-4 py-4 bg-white border-2 border-slate-200 rounded-2xl text-3xl font-black text-slate-800 text-center tracking-[0.5em] placeholder:text-slate-300 focus:outline-none focus:border-emerald-400 focus:ring-4 focus:ring-emerald-50/50 transition-all shadow-sm"
+                  placeholder="000"
+                />
+              </div>
+
+              <div>
+                <label className="block text-sm font-bold text-slate-700 mb-2 uppercase tracking-wide">Ad Soyad</label>
+                <input
+                  value={duzenleModal.ad_soyad}
+                  onChange={(e) => setDuzenleModal((p) => ({ ...p, ad_soyad: e.target.value.toLocaleUpperCase("tr-TR") }))}
+                  className="w-full px-5 py-3 bg-white border-2 border-slate-200 rounded-2xl text-lg font-bold text-slate-800 placeholder:text-slate-400 focus:outline-none focus:border-emerald-400 focus:ring-2 focus:ring-emerald-100 transition-all shadow-sm"
+                  placeholder="NADİR KAYA"
+                />
+              </div>
+
+              <div>
+                <label className="block text-sm font-bold text-slate-700 mb-2 uppercase tracking-wide">Telefon</label>
+                <input
+                  value={duzenleModal.telefon}
+                  inputMode="numeric"
+                  onChange={(e) => {
+                    const formatted = formatTelefonTR(e.target.value)
+                    setDuzenleModal((p) => ({ ...p, telefon: formatted }))
+                  }}
+                  className="w-full px-5 py-3 bg-white border-2 border-slate-200 rounded-2xl text-lg font-semibold text-slate-800 placeholder:text-slate-400 focus:outline-none focus:border-emerald-400 focus:ring-2 focus:ring-emerald-100 transition-all shadow-sm"
+                  placeholder="0555 123 45 67"
+                />
+              </div>
+
+              <div>
+                <label className="block text-sm font-bold text-slate-700 mb-2 uppercase tracking-wide">Ödeme Yöntemi</label>
+                <div className="grid grid-cols-2 gap-3">
+                  <button
+                    type="button"
+                    onClick={() => setDuzenleModal((p) => ({ ...p, odeme_tipi: "yag" }))}
+                    className={`px-4 py-3 rounded-2xl border-2 font-black transition shadow-sm ${duzenleModal.odeme_tipi === "yag" ? "border-blue-500 bg-blue-50 text-blue-700" : "border-slate-200 bg-white text-slate-600 hover:bg-slate-50"}`}
+                  >
+                    HAK
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setDuzenleModal((p) => ({ ...p, odeme_tipi: "para" }))}
+                    className={`px-4 py-3 rounded-2xl border-2 font-black transition shadow-sm ${duzenleModal.odeme_tipi === "para" ? "border-red-500 bg-red-50 text-red-700" : "border-slate-200 bg-white text-slate-600 hover:bg-slate-50"}`}
+                  >
+                    PARA
+                  </button>
+                </div>
+              </div>
+            </div>
+
+            <div className="flex gap-3 mt-7">
+              <button
+                onClick={() => setDuzenleModal(null)}
+                className="flex-1 py-3 rounded-2xl font-bold text-slate-600 bg-slate-100 hover:bg-slate-200 transition"
+              >
+                İptal
+              </button>
+              <button
+                onClick={duzenleKaydet}
+                className="flex-1 py-3 rounded-2xl font-bold text-white bg-gradient-to-r from-emerald-500 to-emerald-600 hover:from-emerald-600 hover:to-emerald-700 shadow-lg transition"
+              >
+                Kaydet
+              </button>
+            </div>
           </div>
         </div>
       )}
@@ -492,15 +673,16 @@ export default function GirisciPanel() {
                           <th className="px-5 py-4 text-left text-sm font-bold text-slate-600 uppercase tracking-wider">
                             Giriş Saati
                           </th>
-                          <th className="px-5 py-4 text-center text-sm font-bold text-slate-600 uppercase tracking-wider">
+                          <th className="px-5 py-4 text-center text-sm font-bold text-slate-600 uppercase tracking-wider w-36">
                             Durum
                           </th>
                           <th className="px-5 py-4 text-center text-sm font-bold text-slate-600 uppercase tracking-wider">
                             Ödeme
                           </th>
-                          <th className="px-5 py-4 text-center text-sm font-bold text-slate-600 uppercase tracking-wider">
+                          <th className="px-5 py-4 text-center text-sm font-bold text-slate-600 uppercase tracking-wider w-52">
                             İşlem
                           </th>
+                          <th className="px-3 py-4 w-10"></th>
                         </tr>
                       </thead>
 
@@ -524,7 +706,7 @@ export default function GirisciPanel() {
                               : isSiraBekliyor
                                 ? "Sıra Bekliyor"
                                 : isSirada
-                                  ? "Sırada"
+                                  ? "Yağcıda"
                                   : "Çıkışta"
 
                             const statusColor = isBekleyecek
@@ -543,7 +725,7 @@ export default function GirisciPanel() {
                                   </span>
                                 </td>
 
-                                <td className="px-5 py-4">
+                                <td className="px-5 py-4 whitespace-nowrap">
                                   <div className="flex flex-col">
                                     <span className="text-base font-bold text-slate-700">
                                       {kayit.ad_soyad}
@@ -571,9 +753,9 @@ export default function GirisciPanel() {
                                   </div>
                                 </td>
 
-                                <td className="px-5 py-4 text-center">
+                                <td className="px-5 py-4 text-center w-36">
                                   <span
-                                    className={`inline-flex items-center px-4 py-1.5 border-2 rounded-full text-sm font-black uppercase tracking-wide shadow-sm ${statusColor}`}
+                                    className={`inline-flex items-center px-4 py-1.5 border-2 rounded-full text-sm font-black uppercase tracking-wide shadow-sm whitespace-nowrap ${statusColor}`}
                                   >
                                     {isBekleyecek ? (
                                       <span className="w-2 h-2 rounded-full bg-blue-500 mr-2 shadow-lg"></span>
@@ -598,24 +780,56 @@ export default function GirisciPanel() {
                                   </span>
                                 </td>
 
-                                <td className="px-5 py-4 text-center">
-                                  {isSiraBekliyor ? (
-                                    <button
-                                      onClick={() => sikilacakYap(kayit.id)}
-                                      className="px-4 py-2 rounded-xl font-black text-sm bg-gradient-to-r from-emerald-500 to-emerald-600 text-white shadow-md hover:scale-[1.02] active:scale-[0.98] transition whitespace-nowrap"
-                                    >
-                                      SIKILACAK YAP
-                                    </button>
-                                  ) : isBekleyecek ? (
-                                    <button
-                                      onClick={() => sirayayAl(kayit.id)}
-                                      className="px-4 py-2 rounded-xl font-black text-sm bg-gradient-to-r from-blue-500 to-blue-600 text-white shadow-md hover:scale-[1.02] active:scale-[0.98] transition whitespace-nowrap"
-                                    >
-                                      SIRAYA AL
-                                    </button>
-                                  ) : (
-                                    <span className="text-sm font-bold text-slate-400">-</span>
-                                  )}
+                                <td className="px-5 py-4 text-center w-52">
+                                  <div className="flex items-center justify-center gap-2">
+                                    {isSiraBekliyor ? (
+                                      <button
+                                        onClick={() => sikilacakYap(kayit.id)}
+                                        className="px-4 py-2 rounded-xl font-black text-sm bg-gradient-to-r from-emerald-500 to-emerald-600 text-white shadow-md hover:scale-[1.02] active:scale-[0.98] transition whitespace-nowrap"
+                                      >
+                                        SIKILACAK YAP
+                                      </button>
+                                    ) : isBekleyecek ? (
+                                      <button
+                                        onClick={() => sirayayAl(kayit.id)}
+                                        className="px-4 py-2 rounded-xl font-black text-sm bg-gradient-to-r from-blue-500 to-blue-600 text-white shadow-md hover:scale-[1.02] active:scale-[0.98] transition whitespace-nowrap"
+                                      >
+                                        SIRAYA AL
+                                      </button>
+                                    ) : isSirada ? (
+                                      <button
+                                        onClick={() => geriSikilacak(kayit.id)}
+                                        className="px-4 py-2 rounded-xl font-black text-sm bg-gradient-to-r from-slate-100 to-slate-200 text-slate-600 border border-slate-300 shadow-sm hover:scale-[1.02] active:scale-[0.98] transition flex items-center gap-2 whitespace-nowrap"
+                                      >
+                                        <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 10h10a8 8 0 018 8v2M3 10l6 6m-6-6l6-6" />
+                                        </svg>
+                                        GERİ AL
+                                      </button>
+                                    ) : (
+                                      <span className="text-sm font-bold text-slate-400">-</span>
+                                    )}
+                                  </div>
+                                </td>
+
+                                <td className="px-3 py-4 w-10 relative">
+                                  <button
+                                    onMouseDown={(e) => {
+                                      e.stopPropagation()
+                                      if (acikMenu === kayit.id) {
+                                        setAcikMenu(null)
+                                      } else {
+                                        const rect = e.currentTarget.getBoundingClientRect()
+                                        setMenuPos({ top: rect.bottom + 4, left: rect.right - 160 })
+                                        setAcikMenu(kayit.id)
+                                      }
+                                    }}
+                                    className="p-1.5 rounded-lg text-slate-500 hover:text-slate-900 transition"
+                                  >
+                                    <svg className="w-6 h-6" fill="currentColor" viewBox="0 0 24 24">
+                                      <circle cx="12" cy="5" r="2" /><circle cx="12" cy="12" r="2" /><circle cx="12" cy="19" r="2" />
+                                    </svg>
+                                  </button>
                                 </td>
                               </tr>
                             )

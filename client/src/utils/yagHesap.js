@@ -25,7 +25,7 @@ export function hesaplaYagIslemi({ cikanYag, zeytin, hakOran, yagFiyati, odemeTi
 
   const verilecekBidon = musteriKalan > 0 ? Math.ceil(musteriKalan / 50) : 0
 
-  const randiman = zey > 0 && kantarYag > 0 ? (kantarYag / zey) * 100 : 0
+  const randiman = zey > 0 && netYag > 0 ? (zey / netYag) : 0
 
   return {
     netYag,

@@ -275,6 +275,31 @@ app.post("/api/giris", (req, res) => {
   )
 })
 
+// Kayıt düzenle
+app.put("/api/giris-duzenle/:id", (req, res) => {
+  const id = req.params.id
+  const { musteri_no, ad_soyad, telefon, odeme_tipi } = req.body
+  if (!musteri_no || !ad_soyad) {
+    return res.status(400).json({ msg: "Eksik bilgi" })
+  }
+  const tel = normalizeTelefonTR(telefon)
+  db.run(
+    "UPDATE islemler SET musteri_no=?, ad_soyad=?, telefon=?, odeme_tipi=? WHERE id=?",
+    [musteri_no, ad_soyad, tel || "", odeme_tipi || "yag", id],
+    function (err) {
+      if (err) {
+        if (err.message && err.message.includes("UNIQUE")) {
+          return res.status(409).json({ msg: "Bu müşteri numarası zaten kullanımda." })
+        }
+        return res.status(500).json(err)
+      }
+      if (this.changes === 0) return res.status(404).json({ msg: "Kayıt bulunamadı." })
+      io.emit("veri-guncellendi")
+      res.json({ msg: "Kayıt güncellendi." })
+    }
+  )
+})
+
 // Bekleyecek → Sıra Bekliyor (giris_durum=sikilacak, status=0 kalır)
 app.put("/api/giris-siraya-al/:id", (req, res) => {
   const id = req.params.id
@@ -286,6 +311,36 @@ app.put("/api/giris-siraya-al/:id", (req, res) => {
       if (this.changes === 0) return res.status(400).json({ msg: "Kayıt bekleyecek durumda değil." })
       io.emit("veri-guncellendi")
       res.json({ msg: "Sıraya alındı." })
+    }
+  )
+})
+
+// Sıra Bekliyor → Bekleyecek (geri al)
+app.put("/api/giris-geri-bekleyecek/:id", (req, res) => {
+  const id = req.params.id
+  db.run(
+    "UPDATE islemler SET giris_durum='bekleyecek' WHERE id=? AND status=0 AND giris_durum='sikilacak'",
+    [id],
+    function (err) {
+      if (err) return res.status(500).json(err)
+      if (this.changes === 0) return res.status(400).json({ msg: "Kayıt sıra bekliyor durumunda değil." })
+      io.emit("veri-guncellendi")
+      res.json({ msg: "Bekleyecek durumuna alındı." })
+    }
+  )
+})
+
+// Yağcıda → Sıra Bekliyor (geri al)
+app.put("/api/giris-geri-sikilacak/:id", (req, res) => {
+  const id = req.params.id
+  db.run(
+    "UPDATE islemler SET status=0 WHERE id=? AND status=1",
+    [id],
+    function (err) {
+      if (err) return res.status(500).json(err)
+      if (this.changes === 0) return res.status(400).json({ msg: "Kayıt yağcıda durumunda değil." })
+      io.emit("veri-guncellendi")
+      res.json({ msg: "Sıra bekliyor durumuna alındı." })
     }
   )
 })
