@@ -604,7 +604,11 @@ export default function CikisciPanel({ defaultSettings }) {
       setMesaj("Bidon iadesi kaydedildi.")
       setIadeModalAcik(false)
       setIadeAdet("")
-      setSeciliIslem((prev) => (prev ? { ...prev, iade_bidonlar: payload.iade_bidonlar } : prev))
+      if (aktifTab === "bidonlar") {
+        setSeciliIslem(null)
+      } else {
+        setSeciliIslem((prev) => (prev ? { ...prev, iade_bidonlar: payload.iade_bidonlar } : prev))
+      }
       fetchListe()
       setTimeout(() => setMesajAnim("tik"), 1200)
       setTimeout(() => setMesaj(""), 3000)
@@ -736,7 +740,10 @@ export default function CikisciPanel({ defaultSettings }) {
                 </p>
               </div>
               <button
-                onClick={() => setIadeModalAcik(false)}
+                onClick={() => {
+                  setIadeModalAcik(false)
+                  if (aktifTab === "bidonlar") setSeciliIslem(null)
+                }}
                 className="text-slate-400 hover:text-red-500 text-3xl font-bold transition-colors"
               >
                 x
@@ -1123,7 +1130,7 @@ export default function CikisciPanel({ defaultSettings }) {
           </div>
         )}
 
-        {!seciliIslem ? (
+        {(!seciliIslem || aktifTab === "bidonlar") ? (
           aktifTab === "bidonlar" ? (
             <div className="flex-1 p-8 overflow-y-auto">
               <div className="max-w-4xl mx-auto space-y-10 py-4">
@@ -1190,7 +1197,21 @@ export default function CikisciPanel({ defaultSettings }) {
                       {bidonListesi.map((item, idx) => (
                         <div
                           key={item.telefon + idx}
-                          className="bg-white p-8 rounded-2xl border-2 border-slate-200 shadow-sm hover:shadow-lg transition-all flex justify-between items-start"
+                          onClick={() => {
+                            const kayitlar = tumListe.filter(x =>
+                              x.odeme_tipi !== "SATIS" &&
+                              x.status === 3 &&
+                              normalizeTelefon(x.telefon) === item.telefon
+                            )
+                            if (kayitlar.length === 0) return
+                            const enSon = [...kayitlar].sort((a, b) =>
+                              new Date(b.finished_at || b.created_at) - new Date(a.finished_at || a.created_at)
+                            )[0]
+                            setSeciliIslem(enSon)
+                            setIadeAdet("")
+                            setIadeModalAcik(true)
+                          }}
+                          className="bg-white p-8 rounded-2xl border-2 border-slate-200 shadow-sm hover:shadow-lg hover:border-violet-300 cursor-pointer transition-all flex justify-between items-start"
                         >
                           <div className="flex flex-col gap-1">
                             {item.ad_soyad.split(" / ").map((name, i) => (
@@ -1458,34 +1479,6 @@ export default function CikisciPanel({ defaultSettings }) {
                 )}
               </div>
 
-              {seciliIslem.status === 3 && (
-                <>
-                  <div>
-                    <p className="text-sm font-bold text-emerald-700 mb-3">{normalizeTelefon(seciliIslem.telefon)} Numaralı Müşterinin Tüm Bidonları:</p>
-                    <div className="grid grid-cols-3 gap-3">
-                      <div className="p-4 rounded-2xl border-2 border-slate-300 bg-slate-50">
-                        <p className="text-xs font-black text-slate-500 uppercase">Verilen</p>
-                        <p className="text-2xl font-black text-slate-800">{ayniTelefonTumBidonlar.verilenler.length} ADET</p>
-                      </div>
-                      <div className="p-4 rounded-2xl border-2 border-emerald-400 bg-emerald-100">
-                        <p className="text-xs font-black text-emerald-800 uppercase">İade Alınan</p>
-                        <p className="text-2xl font-black text-emerald-900">{ayniTelefonTumBidonlar.iadeler.length} ADET</p>
-                      </div>
-                      <div className="p-4 rounded-2xl border-2 border-amber-400 bg-amber-100">
-                        <p className="text-xs font-black text-amber-800 uppercase">Müşteride Kalan</p>
-                        <p className="text-2xl font-black text-amber-900">{ayniTelefonTumBidonlar.kalanlar.length} ADET</p>
-                      </div>
-                    </div>
-                  </div>
-
-                  <button
-                    type="button"
-                    onClick={openIadeModal}
-                    className="w-full p-4 rounded-2xl border-2 border-emerald-300 bg-emerald-50 hover:bg-emerald-100 transition-all font-black text-emerald-800">
-                    Bidon İadesi Ekle
-                  </button>
-                </>
-              )}
 
               {seciliIslem.status !== 3 ? (
                 <button
