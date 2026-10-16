@@ -1,4 +1,3 @@
- 
 export default {
   content: [
     "./index.html",
@@ -6,38 +5,19 @@ export default {
   ],
   theme: {
     extend: {
-      keyframes: {
-        slideDown: {
-          '0%': { transform: 'translate(-50%, -100%)', opacity: '0' },
-          '100%': { transform: 'translate(-50%, 0)', opacity: '1' }
-        },
-        spinToCircle: {
-          '0%': { 
-            borderColor: 'rgba(255, 255, 255, 0.3)',
-            borderTopColor: 'white',
-            transform: 'rotate(0deg)' 
-          },
-          '70%': { 
-            borderColor: 'rgba(255, 255, 255, 0.3)',
-            borderTopColor: 'white',
-            transform: 'rotate(1080deg)' 
-          },
-          '100%': { 
-            borderColor: 'white',
-            transform: 'rotate(1080deg)' 
-          }
-        },
-        checkmark: {
-          '0%': { opacity: '0', transform: 'scale(0)' },
-          '50%': { opacity: '1', transform: 'scale(1.2)' },
-          '100%': { opacity: '1', transform: 'scale(1)' }
-        }
+      colors: {
+        murekkep: "#1C2420",
+        zemin: "#F3F4F1",
+        cizgi: "#D9DCD4",
+        zeytin: "#3F5A2A",
+        sizma: "#A9791C",
+        para: "#A23B2A",
       },
-      animation: {
-        slideDown: 'slideDown 0.3s ease-out',
-        spinToCircle: 'spinToCircle 1.5s ease-out forwards',
-        checkmark: 'checkmark 0.5s ease-out 1.5s forwards'
-      }
+      fontFamily: {
+        display: ["Archivo", "system-ui", "sans-serif"],
+        sans: ['"Source Sans 3"', "system-ui", "sans-serif"],
+        mono: ['"IBM Plex Mono"', "ui-monospace", "monospace"],
+      },
     },
   },
   plugins: [],

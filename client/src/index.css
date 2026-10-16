@@ -2,6 +2,91 @@
 @tailwind components;
 @tailwind utilities;
 
+@layer base {
+  body {
+    @apply bg-zemin text-murekkep font-sans antialiased;
+  }
+  :focus-visible {
+    @apply outline-none ring-2 ring-zeytin ring-offset-1;
+  }
+}
+
+@layer components {
+  .card {
+    @apply bg-white border border-cizgi rounded-md;
+  }
+  .label {
+    @apply block text-xs font-semibold uppercase tracking-wider text-murekkep/60 mb-1.5;
+  }
+  .input {
+    @apply w-full px-3 py-2.5 bg-white border border-cizgi rounded text-base text-murekkep placeholder:text-murekkep/30 focus:outline-none focus:border-zeytin focus:ring-2 focus:ring-zeytin/20;
+  }
+  .btn {
+    @apply inline-flex items-center justify-center gap-2 px-4 py-2.5 rounded font-semibold text-sm transition-colors disabled:opacity-50 disabled:cursor-not-allowed;
+  }
+  .btn-primary {
+    @apply btn bg-zeytin text-white hover:bg-[#344b23];
+  }
+  .btn-secondary {
+    @apply btn bg-white text-murekkep border border-cizgi hover:bg-zemin;
+  }
+  .btn-danger {
+    @apply btn bg-white text-red-700 border border-red-200 hover:bg-red-50;
+  }
+
+  /* Segment sekmeler */
+  .seg {
+    @apply flex bg-zemin border border-cizgi rounded p-1 gap-1;
+  }
+  .seg-item {
+    @apply flex-1 py-2 text-sm font-semibold rounded text-murekkep/60 hover:text-murekkep hover:bg-white transition-colors;
+  }
+  .seg-active {
+    @apply bg-zeytin text-white hover:bg-zeytin hover:text-white;
+  }
+
+  /* Müşteri numarası çipi */
+  .fis-no {
+    @apply inline-flex items-center gap-1 px-2 py-0.5 rounded-sm bg-murekkep text-white font-mono text-sm font-medium tabular-nums;
+  }
+
+  /* Rakam + birim */
+  .readout {
+    @apply font-mono font-medium tabular-nums;
+  }
+  .readout-birim {
+    @apply font-sans text-xs font-normal text-murekkep/50 ml-1;
+  }
+
+  /* Durum rozetleri */
+  .rozet {
+    @apply inline-flex items-center px-2 py-0.5 rounded-sm text-xs font-semibold border;
+  }
+  .rozet-bekliyor {
+    @apply rozet bg-white text-murekkep/70 border-cizgi;
+  }
+  .rozet-sirada {
+    @apply rozet bg-sizma/10 text-sizma border-sizma/30;
+  }
+  .rozet-cikista {
+    @apply rozet bg-zeytin/10 text-zeytin border-zeytin/30;
+  }
+  .rozet-bitti {
+    @apply rozet bg-murekkep text-white border-murekkep;
+  }
+
+  /* Kantar fişi */
+  .fis {
+    @apply bg-white border border-cizgi rounded-md;
+  }
+  .fis-satir {
+    @apply flex items-baseline justify-between gap-4 px-5 py-2.5 border-b border-dashed border-cizgi;
+  }
+  .fis-toplam {
+    @apply flex items-baseline justify-between gap-4 px-5 py-3 border-t-4 border-double border-cizgi;
+  }
+}
+
 @keyframes circle-draw {
   from { stroke-dashoffset: 63; }
   to   { stroke-dashoffset: 0; }
@@ -32,4 +117,12 @@
 
 .anim-pop-in {
   animation: pop-in 0.35s cubic-bezier(0.34, 1.56, 0.64, 1) forwards;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+  }
 }
