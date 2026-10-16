@@ -1,8 +1,23 @@
 import { useEffect, useMemo, useRef, useState, useCallback } from "react"
 import axios from "axios"
+import { CheckCircle2, RefreshCw, X } from "lucide-react"
 import { hesaplaYagciPaneli } from "../utils/yagHesap"
 
 axios.defaults.baseURL = "/"
+
+const ALAN_ETIKET = "label text-center min-h-[2.25rem] flex items-end justify-center"
+const GIRDI = "input readout text-2xl text-center py-3"
+const OKUMA = "bg-zemin border border-cizgi rounded px-4 py-3 text-center readout text-2xl"
+
+const ODEME_SECILI = {
+  para: "border-2 border-para bg-para/10 text-para",
+  sizma: "border-2 border-sizma bg-sizma/10 text-sizma",
+}
+
+const odemeKutu = (aktif, renk) =>
+  `relative cursor-pointer select-none rounded border px-5 py-3 text-center transition-colors ${
+    aktif ? ODEME_SECILI[renk] : "bg-white border-cizgi text-murekkep/50 hover:bg-zemin"
+  }`
 
 export default function YagciPanel({ defaultSettings }) {
   const [liste, setListe] = useState([])
@@ -236,40 +251,25 @@ export default function YagciPanel({ defaultSettings }) {
 
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-emerald-50 via-white to-amber-50 p-6 relative overflow-hidden">
-      <div className="absolute inset-0 opacity-[0.03] pointer-events-none">
-        <div
-          className="absolute inset-0"
-          style={{
-            backgroundImage: `radial-gradient(circle at 2px 2px, #059669 1px, transparent 0)`,
-            backgroundSize: "40px 40px",
-          }}
-        ></div>
-      </div>
-
-      <div className="absolute top-20 right-1/4 w-96 h-96 bg-emerald-200/30 rounded-full blur-3xl animate-pulse pointer-events-none"></div>
-      <div className="absolute bottom-40 left-1/3 w-72 h-72 bg-amber-200/30 rounded-full blur-3xl animate-pulse delay-1000 pointer-events-none"></div>
-
-      <div className="max-w-7xl mx-auto relative z-10">
-        <div className="text-center mb-8">
-          <h1 className="text-4xl font-black text-transparent bg-clip-text bg-gradient-to-r from-emerald-600 via-emerald-700 to-emerald-800 mb-2 tracking-tight">
-            Yağcı İşlem Paneli
-          </h1>
-          <p className="text-slate-600 font-medium">
-            Beklemedeki müşteriyi seç, işlemi gir, bitir.
+    <div className="p-6">
+      <div className="max-w-7xl mx-auto">
+        <div className="mb-6">
+          <h1 className="font-display text-2xl font-bold text-murekkep">Yağhane</h1>
+          <p className="text-murekkep/60">
+            Bekleyen müşteriyi seç, ölçümleri gir, işlemi onayla.
           </p>
         </div>
 
         {hata && (
           <div className="fixed top-20 left-1/2 transform -translate-x-1/2 z-[9999]">
-            <div className="bg-gradient-to-r from-red-600 to-red-700 text-white px-6 py-4 rounded-2xl shadow-2xl flex items-center gap-3 border-2 border-red-400/30 backdrop-blur-sm">
-              <span className="font-bold text-base">{hata}</span>
+            <div className="bg-murekkep text-white px-5 py-3 rounded-md shadow-lg flex items-center gap-3 border-l-4 border-red-500">
+              <span className="font-semibold">{hata}</span>
             </div>
           </div>
         )}
         {mesaj && (
           <div className="fixed top-20 left-1/2 transform -translate-x-1/2 z-[9999]">
-            <div className="bg-gradient-to-r from-emerald-600 to-emerald-700 text-white px-6 py-4 rounded-2xl shadow-2xl flex items-center gap-3 border-2 border-emerald-400/30 backdrop-blur-sm">
+            <div className="bg-murekkep text-white px-5 py-3 rounded-md shadow-lg flex items-center gap-3 border-l-4 border-zeytin">
               <div className="relative w-6 h-6 flex-shrink-0">
                 {mesajAnim === "spin" ? (
                   <svg className="w-6 h-6 animate-spin" viewBox="0 0 24 24" fill="none">
@@ -283,417 +283,344 @@ export default function YagciPanel({ defaultSettings }) {
                   </svg>
                 )}
               </div>
-              <span className="font-bold text-base">{mesaj}</span>
+              <span className="font-semibold">{mesaj}</span>
             </div>
           </div>
         )}
 
         <div className="grid grid-cols-1 lg:grid-cols-7 gap-6">
-          <div className="bg-white/80 backdrop-blur-xl rounded-3xl shadow-2xl border border-white/60 p-6 lg:col-span-3 relative overflow-hidden flex flex-col">
-            <div className="absolute inset-0 bg-gradient-to-br from-emerald-50/50 to-transparent pointer-events-none"></div>
+          <div className="card p-5 lg:col-span-3 flex flex-col">
+            <div className="flex items-center justify-between mb-4">
+              <h2 className="font-display text-lg font-bold text-murekkep">Bekleyenler</h2>
+              <button onClick={fetchBekleyenler} className="btn-secondary">
+                <RefreshCw className="w-4 h-4" />
+                Yenile
+              </button>
+            </div>
 
-            <div className="relative z-10 h-full flex flex-col">
-              <div className="flex items-center justify-between mb-4">
-                <h2 className="text-xl font-bold text-slate-800">Bekleyenler</h2>
+            <div className="mb-4">
+              <label className="label">Müşteri no ile ara</label>
+
+              <div className="flex gap-2">
+                <input
+                  value={musteriNoAra}
+                  onChange={(e) =>
+                    setMusteriNoAra(
+                      e.target.value.replace(/\D/g, "").slice(0, 3)
+                    )
+                  }
+                  placeholder="000"
+                  inputMode="numeric"
+                  className="input readout"
+                />
+
                 <button
-                  onClick={fetchBekleyenler}
-                  className="px-4 py-2 text-sm font-semibold rounded-xl bg-gradient-to-r from-slate-100 to-slate-200 hover:from-slate-200 hover:to-slate-300 transition-all shadow-sm hover:shadow"
+                  type="button"
+                  onClick={() => setMusteriNoAra("")}
+                  className="btn-secondary px-3"
+                  title="Temizle"
+                  aria-label="Temizle"
                 >
-                  Yenile
+                  <X className="w-4 h-4" />
                 </button>
               </div>
 
-              <div className="mb-4">
-                <label className="block text-sm font-bold text-slate-600 uppercase tracking-wider mb-2">
-                  Müşteri No İle Ara
-                </label>
+              {!!musteriNoAra && (
+                <p className="mt-2 text-xs text-murekkep/60">
+                  Sonuç: {filtreliListe.length}
+                </p>
+              )}
+            </div>
 
-                <div className="flex gap-2">
-                  <input
-                    value={musteriNoAra}
-                    onChange={(e) =>
-                      setMusteriNoAra(
-                        e.target.value.replace(/\D/g, "").slice(0, 3)
-                      )
-                    }
-                    placeholder="000"
-                    inputMode="numeric"
-                    className="w-full px-4 py-3 bg-white/70 border-2 border-slate-200 rounded-2xl text-base font-bold text-slate-800 focus:outline-none focus:border-emerald-400 focus:ring-2 focus:ring-emerald-100 transition shadow-sm"
-                  />
+            {loadingListe && (
+              <div className="p-6 text-center text-sm text-murekkep/60">
+                <div className="inline-block animate-spin rounded-full h-8 w-8 border-4 border-cizgi border-t-zeytin mb-2"></div>
+                <p>Liste yükleniyor...</p>
+              </div>
+            )}
 
+            {listeHata && (
+              <div className="p-3 bg-red-50 border border-red-200 rounded mb-3">
+                <p className="text-sm text-red-700 font-semibold">{listeHata}</p>
+              </div>
+            )}
+
+            {!loadingListe && filtreliListe.length === 0 && !listeHata && (
+              <div className="p-8 text-center text-murekkep/60">
+                <p>{musteriNoAra ? "Aramaya uygun müşteri yok." : "Bekleyen müşteri yok."}</p>
+              </div>
+            )}
+
+            <div className="space-y-2 flex-1 min-h-0 overflow-auto pr-1">
+              {filtreliListe.map((m) => {
+                const active = secili?.id === m.id
+                return (
                   <button
-                    type="button"
-                    onClick={() => setMusteriNoAra("")}
-                    className="px-4 py-3 rounded-2xl border-2 border-slate-200 bg-white/70 text-slate-700 font-black hover:bg-white hover:border-slate-300 transition shadow-sm"
-                    title="Temizle"
+                    key={m.id}
+                    onClick={() => setSecili(m)}
+                    className={`w-full text-left p-3 rounded border flex gap-3 items-start transition-colors ${active
+                      ? "border-zeytin border-l-4 bg-zeytin/5"
+                      : "border-cizgi bg-white hover:bg-zemin"
+                      }`}
                   >
-                    X
+                    <span className="fis-no text-lg">№ {m.musteri_no}</span>
+                    <div className="flex-1 min-w-0">
+                      <div className="flex items-center gap-2">
+                        <p className="font-semibold text-murekkep text-lg truncate flex-1">{m.ad_soyad}</p>
+                        {(m.odeme_tipi || 'yag') === 'yag' ? (
+                          <span className="rozet bg-sizma/10 text-sizma border-sizma/30">HAK</span>
+                        ) : (
+                          <span className="rozet bg-para/10 text-para border-para/30">PARA</span>
+                        )}
+                      </div>
+                      <p className="readout text-sm text-murekkep/60">
+                        {m.telefon ? normalizeTelefon(m.telefon) : "-"}
+                      </p>
+                      <p className="text-xs text-murekkep/50 mt-1">
+                        {new Date(m.created_at).toLocaleDateString("tr-TR", { day: "numeric", month: "long", year: "numeric" })}
+                        {" · "}
+                        {new Date(m.created_at).toLocaleTimeString("tr-TR", { hour: "2-digit", minute: "2-digit" })}
+                      </p>
+                    </div>
                   </button>
-                </div>
-
-                {!!musteriNoAra && (
-                  <p className="mt-2 text-xs text-slate-500 font-semibold">
-                    Sonuç: {filtreliListe.length}
-                  </p>
-                )}
-              </div>
-
-              {loadingListe && (
-                <div className="p-6 text-center text-sm text-slate-500 font-medium">
-                  <div className="inline-block animate-spin rounded-full h-8 w-8 border-4 border-emerald-200 border-t-emerald-600 mb-2"></div>
-                  <p>Liste yükleniyor...</p>
-                </div>
-              )}
-
-              {listeHata && (
-                <div className="p-4 bg-red-50 border-2 border-red-200 rounded-2xl mb-3">
-                  <p className="text-sm text-red-700 font-semibold">{listeHata}</p>
-                </div>
-              )}
-
-              {!loadingListe && filtreliListe.length === 0 && !listeHata && (
-                <div className="p-8 text-center text-slate-500 font-medium">
-                  <p>{musteriNoAra ? "Aramaya uygun müşteri yok." : "Bekleyen müşteri yok."}</p>
-                </div>
-              )}
-
-              <div className="space-y-2 flex-1 min-h-0 overflow-auto pr-1">
-                {filtreliListe.map((m) => {
-                  const active = secili?.id === m.id
-                  return (
-                    <button
-                      key={m.id}
-                      onClick={() => setSecili(m)}
-                      className={`w-full text-left p-4 pr-32 rounded-2xl border-2 transition-all transform hover:scale-[1.01] relative overflow-hidden ${active
-                        ? "border-amber-400 bg-gradient-to-r from-amber-50 to-amber-100/50 shadow-lg shadow-amber-500/20"
-                        : "border-slate-200 bg-white/60 hover:bg-white hover:border-slate-300 hover:shadow-md"
-                        }`}
-                    >
-                      <div className="flex flex-col h-full justify-between">
-                        <div>
-                          <div className="flex items-center gap-2 mb-1">
-                            <p className="font-bold text-slate-800 text-xl truncate flex-1">{m.ad_soyad}</p>
-                            <span className={`text-xs font-black px-2 py-0.5 rounded-md uppercase tracking-wider ${
-                              (m.odeme_tipi || 'yag') === 'yag' 
-                                ? "bg-blue-100 text-blue-700 border border-blue-200"
-                                : "bg-red-100 text-red-700 border border-red-200"
-                            }`}>
-                              {(m.odeme_tipi || 'yag') === 'yag' ? "HAK" : "PARA"}
-                            </span>
-                          </div>
-                          <p className="text-base font-bold text-slate-500">
-                            {m.telefon ? normalizeTelefon(m.telefon) : "-"}
-                          </p>
-                        </div>
-                        
-                        <div className="mt-3 pt-2 border-t border-slate-200/60">
-                          <p className="text-sm font-bold text-slate-500 flex items-center gap-1.5">
-                             <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
-                             </svg>
-                             {new Date(m.created_at).toLocaleDateString("tr-TR", { day: "numeric", month: "long", year: "numeric" })}
-                             <span className="w-1.5 h-1.5 rounded-full bg-slate-300"></span>
-                             {new Date(m.created_at).toLocaleTimeString("tr-TR", { hour: "2-digit", minute: "2-digit" })}
-                          </p>
-                        </div>
-                      </div>
-                      <div className="absolute top-0 right-0 bottom-0 w-28 bg-emerald-600 rounded-r-xl flex items-center justify-center">
-                        <p className="text-2xl font-black text-white">
-                          #{m.musteri_no}
-                        </p>
-                      </div>
-                    </button>
-                  )
-                })}
-              </div>
+                )
+              })}
             </div>
           </div>
 
           <div className="lg:col-span-4">
             {!secili ? (
-              <div className="bg-white/80 backdrop-blur-xl rounded-3xl shadow-2xl border border-white/60 p-16 text-center relative overflow-hidden">
-                <div className="absolute inset-0 bg-gradient-to-br from-slate-50/50 to-transparent pointer-events-none"></div>
-                <div className="relative z-10">
-                  <p className="text-slate-600 font-semibold text-lg">
-                    Lütfen soldan bir müşteri seçin.
-                  </p>
-                </div>
+              <div className="card border-dashed p-16 text-center">
+                <p className="text-murekkep/60 text-lg">
+                  Ölçüm girmek için soldan bir müşteri seçin.
+                </p>
               </div>
             ) : (
-              <div className="bg-white/80 backdrop-blur-xl rounded-3xl shadow-2xl border border-white/60 p-8 space-y-6 relative overflow-hidden">
-                <div className="absolute inset-0 bg-gradient-to-br from-emerald-50/30 to-amber-50/30 pointer-events-none"></div>
-
-                <div className="relative z-10 space-y-6">
-                  <div className="bg-gradient-to-br from-slate-50 to-slate-100/50 rounded-2xl p-6 border-2 border-slate-200 shadow-sm">
-                    <div className="flex items-center justify-between">
-                      <div>
-                        <p className="text-xs font-bold text-slate-500 uppercase tracking-wider mb-2">
-                          Müşteri Bilgileri
-                        </p>
-                        <h3 className="text-2xl font-black text-slate-800">
-                          {secili.ad_soyad}
-                        </h3>
-                        <p className="mt-2 text-xl font-bold text-slate-600">
-                          {secili.telefon ? normalizeTelefon(secili.telefon) : "-"}
-                        </p>
-                      </div>
-                      <div className="text-right">
-                        <p className="text-m font-bold text-slate-500 uppercase tracking-wider mb-2">
-                          Müşteri No
-                        </p>
-                        <div className="px-4 py-2 bg-white rounded-xl border-2 border-slate-200 shadow-sm">
-                          <h3 className="text-3xl font-black text-slate-800">
-                            #{secili.musteri_no}
-                          </h3>
-                        </div>
-                      </div>
-                    </div>
-                  </div>
-
-                  <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                    <div>
-                      <label className="flex items-center justify-center min-h-[3.5rem] text-lg font-bold text-slate-700 mb-2 text-center leading-tight">Yağ ile Ödeme Bedeli (₺)</label>
-                      <input
-                        type="number"
-                        name="yag_ile_odeme"
-                        value={formData.yag_ile_odeme}
-                        onChange={handleChange}
-                        placeholder="0"
-                        className="w-full px-5 py-4 bg-white border-2 border-slate-200 rounded-2xl text-3xl font-bold text-slate-800 text-center focus:outline-none focus:border-emerald-400 transition-all shadow-sm hover:shadow-md"
-                      />
-                    </div>
-                    <div>
-                      <label className="flex items-center justify-center min-h-[3.5rem] text-lg font-bold text-slate-700 mb-2 text-center leading-tight">Bidon Ücreti (₺)</label>
-                      <input
-                        type="number"
-                        name="bidon_ucreti"
-                        value={formData.bidon_ucreti}
-                        onChange={handleChange}
-                        placeholder="0"
-                        className="w-full px-5 py-4 bg-white border-2 border-slate-200 rounded-2xl text-3xl font-bold text-slate-800 text-center focus:outline-none focus:border-emerald-400 transition-all shadow-sm hover:shadow-md"
-                      />
-                    </div>
-                    <div>
-                      <label className="flex items-center justify-center min-h-[3.5rem] text-lg font-bold text-slate-700 mb-2 text-center leading-tight">Sıkım Bedeli (₺)</label>
-                      <input
-                        type="number"
-                        name="sikim_bedeli"
-                        value={formData.sikim_bedeli}
-                        onChange={handleChange}
-                        placeholder="0"
-                        className="w-full px-5 py-4 bg-white border-2 border-slate-200 rounded-2xl text-3xl font-bold text-slate-800 text-center focus:outline-none focus:border-emerald-400 transition-all shadow-sm hover:shadow-md"
-                      />
-                    </div>
-                  </div>
-
-                  <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                    <div>
-                      <label className="flex items-center justify-center min-h-[3.5rem] text-lg font-bold text-slate-700 mb-2 text-center leading-tight">Gelen Zeytin (KG)</label>
-                      <input
-                        type="number"
-                        name="zeytin_kg"
-                        value={formData.zeytin_kg}
-                        onChange={handleChange}
-                        placeholder="500"
-                        className="w-full px-5 py-4 bg-white border-2 border-slate-200 rounded-2xl text-3xl font-bold text-slate-800 text-center focus:outline-none focus:border-slate-400 transition-all shadow-sm hover:shadow-md"
-                      />
-                    </div>
-                    <div>
-                      <label className="flex items-center justify-center min-h-[3.5rem] text-lg font-bold text-slate-700 mb-2 text-center leading-tight">Sıkma Ücreti (₺)</label>
-                      <div className="bg-gradient-to-br from-blue-50 to-blue-100/50 border-2 border-blue-300 rounded-2xl px-5 py-4 text-center shadow-sm">
-                        <div className="text-3xl font-black text-blue-900">{yuvarla(hesap.sikmaUcretiTL)}</div>
-                      </div>
-                    </div>
-                    <div>
-                      <label className="flex items-center justify-center min-h-[3.5rem] text-lg font-bold text-slate-700 mb-2 text-center leading-tight">Sıkma Ücreti (Yağ KG)</label>
-                      <div className="bg-gradient-to-br from-blue-50 to-blue-100/50 border-2 border-blue-300 rounded-2xl px-5 py-4 text-center shadow-sm">
-                        <div className="text-3xl font-black text-blue-900">{yuvarla(hesap.sikmaUcretiYag)}</div>
-                      </div>
-                    </div>
-                  </div>
-
-                  <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                    <div>
-                      <label className="flex items-center justify-center min-h-[3.5rem] text-lg font-bold text-slate-700 mb-2 text-center leading-tight">Kantarda Gözüken Yağ (KG)</label>
-                      <input
-                        type="number"
-                        name="cikan_yag"
-                        value={formData.cikan_yag}
-                        onChange={handleChange}
-                        placeholder="0"
-                        className="w-full px-5 py-4 bg-white border-2 border-slate-200 rounded-2xl text-3xl font-bold text-slate-800 text-center focus:outline-none focus:border-amber-400 transition-all shadow-sm hover:shadow-md"
-                      />
-                    </div>
-                    <div>
-                      <label className="flex items-center justify-center min-h-[3.5rem] text-lg font-bold text-slate-700 mb-2 text-center leading-tight">Kantardaki Bidon</label>
-                      <input
-                        type="number"
-                        name="kantar_bidon"
-                        value={formData.kantar_bidon}
-                        onChange={handleChange}
-                        placeholder="0"
-                        className="w-full px-5 py-4 bg-white border-2 border-slate-200 rounded-2xl text-3xl font-bold text-slate-800 text-center focus:outline-none focus:border-blue-400 transition-all shadow-sm hover:shadow-md"
-                      />
-                    </div>
-                    <div>
-                      <label className="flex items-center justify-center min-h-[3.5rem] text-lg font-bold text-slate-700 mb-2 text-center leading-tight">Net Yağ (KG)</label>
-                      <div className="bg-gradient-to-br from-blue-50 to-blue-100/50 border-2 border-blue-300 rounded-2xl px-5 py-4 text-center shadow-sm">
-                        <div className="text-3xl font-black text-blue-900">{formData.cikan_yag ? yuvarla(hesap.netYag) : "—"}</div>
-                      </div>
-                    </div>
-                  </div>
-
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                    <div>
-                      <label className="flex items-center justify-center min-h-[3.5rem] text-lg font-bold text-slate-700 mb-2 text-center leading-tight">Bidon Bedeli (₺)</label>
-                      <div className="bg-gradient-to-br from-blue-50 to-blue-100/50 border-2 border-blue-300 rounded-2xl px-5 py-4 text-center shadow-sm">
-                        <div className="text-3xl font-black text-blue-900">{yuvarla(hesap.bidonBedeliTL)}</div>
-                      </div>
-                    </div>
-                    <div>
-                      <label className="flex items-center justify-center min-h-[3.5rem] text-lg font-bold text-slate-700 mb-2 text-center leading-tight">Bidon Bedeli (Yağ KG)</label>
-                      <div className="bg-gradient-to-br from-blue-50 to-blue-100/50 border-2 border-blue-300 rounded-2xl px-5 py-4 text-center shadow-sm">
-                        <div className="text-3xl font-black text-blue-900">{yuvarla(hesap.bidonBedeliYag)}</div>
-                      </div>
-                    </div>
-                  </div>
-
-                  <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                    <div>
-                      <label className="flex items-center justify-center min-h-[3.5rem] text-lg font-bold text-slate-700 mb-2 text-center leading-tight">Oran</label>
-                      <div className="bg-gradient-to-br from-blue-50 to-blue-100/50 border-2 border-blue-300 rounded-2xl px-5 py-4 text-center shadow-sm">
-                        <div className="text-3xl font-black text-blue-900">{hesap.oran}</div>
-                      </div>
-                    </div>
-                    <div>
-                      <label className="flex items-center justify-center min-h-[3.5rem] text-lg font-bold text-slate-700 mb-2 text-center leading-tight">Toplam Sıkım Bedeli (₺)</label>
-                      <div onClick={() => setFormData({ ...formData, odeme_tipi: "para" })} className={`relative cursor-pointer select-none border-2 rounded-2xl px-5 py-4 text-center shadow-sm transition-all hover:opacity-100 ${formData.odeme_tipi === "para" ? "bg-gradient-to-br from-red-50 to-red-100/50 border-red-500 shadow-lg" : "bg-slate-50 border-slate-200 opacity-50"}`}>
-                        <span
-                          role="radio"
-                          aria-checked={formData.odeme_tipi === "para"}
-                          className={`absolute top-2 right-2 w-5 h-5 rounded-full border-2 flex items-center justify-center ${formData.odeme_tipi === "para" ? "border-red-600" : "border-slate-400"}`}
-                        >
-                          {formData.odeme_tipi === "para" && <span className="w-2.5 h-2.5 rounded-full bg-red-600" />}
-                        </span>
-                        <div className="text-3xl font-black text-red-700">{yuvarla(hesap.toplamTL)}</div>
-                      </div>
-                    </div>
-                    <div>
-                      <label className="flex items-center justify-center min-h-[3.5rem] text-lg font-bold text-slate-700 mb-2 text-center leading-tight">Toplam Sıkım Bedeli (Yağ KG)</label>
-                      <div onClick={() => setFormData({ ...formData, odeme_tipi: "yag" })} className={`relative cursor-pointer select-none border-2 rounded-2xl px-5 py-4 text-center shadow-sm transition-all hover:opacity-100 ${formData.odeme_tipi === "yag" ? "bg-gradient-to-br from-blue-50 to-blue-100/50 border-blue-500 shadow-lg" : "bg-slate-50 border-slate-200 opacity-50"}`}>
-                        <span
-                          role="radio"
-                          aria-checked={formData.odeme_tipi === "yag"}
-                          className={`absolute top-2 right-2 w-5 h-5 rounded-full border-2 flex items-center justify-center ${formData.odeme_tipi === "yag" ? "border-blue-600" : "border-slate-400"}`}
-                        >
-                          {formData.odeme_tipi === "yag" && <span className="w-2.5 h-2.5 rounded-full bg-blue-600" />}
-                        </span>
-                        <div className="text-3xl font-black text-blue-700">{yuvarla(hesap.toplamYag)}</div>
-                      </div>
-                    </div>
-                  </div>
-
+              <div className="card p-6 space-y-6">
+                <div className="flex items-center justify-between pb-5 border-b border-cizgi">
                   <div>
-                    <label className="block text-sm font-bold text-slate-700 mb-2 text-center">
-                      Verilen Bidon Numaraları
-                    </label>
-
-                    <textarea
-                      ref={bidonRef}
-                      rows={1}
-                      name="bidon_no"
-                      value={formData.bidon_no}
-                      onFocus={autoGrowBidon}
-                      onInput={autoGrowBidon}
-                      onKeyDown={(e) => {
-                        if (e.key === " " || e.key === "Enter") {
-                          e.preventDefault()
-                          setFormData((prev) => {
-                            const v = prev.bidon_no || ""
-                            if (v.length > 0 && !v.endsWith("-"))
-                              return { ...prev, bidon_no: v + "-" }
-                            return prev
-                          })
-                          requestAnimationFrame(autoGrowBidon)
-                        }
-                      }}
-                      onChange={(e) => {
-                        let v = e.target.value
-
-                        v = v.replace(/[^\d-\n]/g, "")
-                        v = v.replace(/-+/g, "-")
-                        v = v
-                          .split("\n")
-                          .map((line) => {
-                            const parts = line.split("-")
-                            const fixedParts = parts.map((p) => p.slice(0, 4))
-                            return fixedParts.join("-")
-                          })
-                          .join("\n")
-
-                        setFormData((prev) => ({ ...prev, bidon_no: v }))
-                        requestAnimationFrame(autoGrowBidon)
-                      }}
-                      className="w-full px-5 py-4 bg-white border-2 border-slate-200 rounded-2xl text-lg font-bold text-slate-800 text-center placeholder:text-slate-400 focus:outline-none focus:border-slate-400 focus:bg-white transition-all tracking-wider resize-none overflow-hidden shadow-sm hover:shadow-md"
-                      placeholder="1234-56-7890"
-                    />
+                    <p className="label">Müşteri</p>
+                    <h3 className="font-display text-xl font-bold text-murekkep">
+                      {secili.ad_soyad}
+                    </h3>
+                    <p className="readout text-murekkep/60">
+                      {secili.telefon ? normalizeTelefon(secili.telefon) : "-"}
+                    </p>
                   </div>
+                  <span className="fis-no text-2xl px-3 py-1">№ {secili.musteri_no}</span>
+                </div>
 
-                  <div className="mt-2 flex flex-col items-center gap-3">
-                    <span className="inline-flex items-center gap-2 px-4 py-2.5 rounded-2xl border-2 border-slate-200 bg-slate-50 text-slate-700 font-black relative overflow-hidden group hover:border-emerald-300 transition-colors w-full max-w-sm justify-center">
-                      <div className="absolute inset-0 bg-emerald-100/0 group-hover:bg-emerald-100/20 transition-colors"></div>
-                      Şu An Verilen Bidon Sayısı: <span className="text-emerald-700 text-lg">{verilenBidonSayisi}</span>
-                    </span>
-
-                    <span className="inline-flex items-center gap-2 px-4 py-2.5 rounded-2xl border-2 border-slate-200 bg-slate-50 text-slate-700 font-black relative overflow-hidden group hover:border-amber-300 transition-colors w-full max-w-sm justify-center">
-                      <div className="absolute inset-0 bg-amber-100/0 group-hover:bg-amber-100/20 transition-colors"></div>
-                      Numaraya Verilen Toplam Bidon Sayısı: <span className="text-amber-700 text-lg">{toplamGecmisBidon + verilenBidonSayisi}</span>
-                    </span>
-                  </div>
-
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                   <div>
-                    <label className="block text-sm font-bold text-slate-700 mb-2 text-center">
-                      İşlem Notları
-                    </label>
-                    <textarea
-                      name="notlar"
-                      value={formData.notlar}
+                    <label className={ALAN_ETIKET}>Yağ ile ödeme bedeli (₺)</label>
+                    <input
+                      type="number"
+                      name="yag_ile_odeme"
+                      value={formData.yag_ile_odeme}
                       onChange={handleChange}
-                      rows="3"
-                      className="w-full px-5 py-4 bg-white border-2 border-slate-200 rounded-2xl text-slate-800 text-center placeholder:text-slate-400 focus:outline-none focus:border-slate-400 focus:bg-white transition-all resize-none shadow-sm hover:shadow-md"
-                      placeholder="İşlem hakkında not ekle..."
+                      placeholder="0"
+                      className={GIRDI}
                     />
                   </div>
-
-                  <div className="flex gap-4 pt-4">
-                    <button
-                      onClick={() => setSecili(null)}
-                      className="w-1/3 py-4 bg-gradient-to-r from-slate-100 to-slate-200 hover:from-slate-200 hover:to-slate-300 text-slate-800 font-bold rounded-2xl transition-all shadow-sm hover:shadow-md transform hover:scale-[1.02] active:scale-[0.98]"
-                    >
-                      İptal
-                    </button>
-
-                    <button
-                      onClick={handleKaydet}
-                      disabled={!formData.zeytin_kg || !formData.cikan_yag || !formData.kantar_bidon || !formData.bidon_no}
-                      className="w-2/3 py-4 bg-gradient-to-r from-emerald-500 to-emerald-600 hover:from-emerald-600 hover:to-emerald-700 text-white font-bold rounded-2xl transition-all shadow-lg shadow-emerald-500/30 hover:shadow-emerald-500/50 transform hover:scale-[1.02] active:scale-[0.98] flex items-center justify-center gap-3 text-lg group disabled:opacity-40 disabled:cursor-not-allowed disabled:transform-none disabled:shadow-none"
-                    >
-                      <span>İşlemi Onayla</span>
-                      <svg
-                        className="w-5 h-5 group-hover:scale-110 transition-transform"
-                        fill="none"
-                        stroke="currentColor"
-                        viewBox="0 0 24 24"
-                      >
-                        <path
-                          strokeLinecap="round"
-                          strokeLinejoin="round"
-                          strokeWidth={2.5}
-                          d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"
-                        />
-                      </svg>
-                    </button>
+                  <div>
+                    <label className={ALAN_ETIKET}>Bidon ücreti (₺)</label>
+                    <input
+                      type="number"
+                      name="bidon_ucreti"
+                      value={formData.bidon_ucreti}
+                      onChange={handleChange}
+                      placeholder="0"
+                      className={GIRDI}
+                    />
                   </div>
+                  <div>
+                    <label className={ALAN_ETIKET}>Sıkım bedeli (₺)</label>
+                    <input
+                      type="number"
+                      name="sikim_bedeli"
+                      value={formData.sikim_bedeli}
+                      onChange={handleChange}
+                      placeholder="0"
+                      className={GIRDI}
+                    />
+                  </div>
+                </div>
+
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                  <div>
+                    <label className={ALAN_ETIKET}>Gelen zeytin (kg)</label>
+                    <input
+                      type="number"
+                      name="zeytin_kg"
+                      value={formData.zeytin_kg}
+                      onChange={handleChange}
+                      placeholder="500"
+                      className={GIRDI}
+                    />
+                  </div>
+                  <div>
+                    <label className={ALAN_ETIKET}>Sıkma ücreti (₺)</label>
+                    <div className={OKUMA}>{yuvarla(hesap.sikmaUcretiTL)}</div>
+                  </div>
+                  <div>
+                    <label className={ALAN_ETIKET}>Sıkma ücreti (yağ kg)</label>
+                    <div className={`${OKUMA} text-sizma`}>{yuvarla(hesap.sikmaUcretiYag)}</div>
+                  </div>
+                </div>
+
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                  <div>
+                    <label className={ALAN_ETIKET}>Kantarda gözüken yağ (kg)</label>
+                    <input
+                      type="number"
+                      name="cikan_yag"
+                      value={formData.cikan_yag}
+                      onChange={handleChange}
+                      placeholder="0"
+                      className={GIRDI}
+                    />
+                  </div>
+                  <div>
+                    <label className={ALAN_ETIKET}>Kantardaki bidon</label>
+                    <input
+                      type="number"
+                      name="kantar_bidon"
+                      value={formData.kantar_bidon}
+                      onChange={handleChange}
+                      placeholder="0"
+                      className={GIRDI}
+                    />
+                  </div>
+                  <div>
+                    <label className={ALAN_ETIKET}>Net yağ (kg)</label>
+                    <div className={`${OKUMA} text-sizma`}>{formData.cikan_yag ? yuvarla(hesap.netYag) : "—"}</div>
+                  </div>
+                </div>
+
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div>
+                    <label className={ALAN_ETIKET}>Bidon bedeli (₺)</label>
+                    <div className={OKUMA}>{yuvarla(hesap.bidonBedeliTL)}</div>
+                  </div>
+                  <div>
+                    <label className={ALAN_ETIKET}>Bidon bedeli (yağ kg)</label>
+                    <div className={`${OKUMA} text-sizma`}>{yuvarla(hesap.bidonBedeliYag)}</div>
+                  </div>
+                </div>
+
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                  <div>
+                    <label className={ALAN_ETIKET}>Oran</label>
+                    <div className={OKUMA}>{hesap.oran}</div>
+                  </div>
+                  <div>
+                    <label className={ALAN_ETIKET}>Toplam sıkım bedeli (₺)</label>
+                    <div onClick={() => setFormData({ ...formData, odeme_tipi: "para" })} className={odemeKutu(formData.odeme_tipi === "para", "para")}>
+                      <span
+                        role="radio"
+                        aria-checked={formData.odeme_tipi === "para"}
+                        className={`absolute top-2 right-2 w-5 h-5 rounded-full border-2 flex items-center justify-center ${formData.odeme_tipi === "para" ? "border-para" : "border-cizgi"}`}
+                      >
+                        {formData.odeme_tipi === "para" && <span className="w-2.5 h-2.5 rounded-full bg-para" />}
+                      </span>
+                      <div className="readout text-2xl">{yuvarla(hesap.toplamTL)}</div>
+                    </div>
+                  </div>
+                  <div>
+                    <label className={ALAN_ETIKET}>Toplam sıkım bedeli (yağ kg)</label>
+                    <div onClick={() => setFormData({ ...formData, odeme_tipi: "yag" })} className={odemeKutu(formData.odeme_tipi === "yag", "sizma")}>
+                      <span
+                        role="radio"
+                        aria-checked={formData.odeme_tipi === "yag"}
+                        className={`absolute top-2 right-2 w-5 h-5 rounded-full border-2 flex items-center justify-center ${formData.odeme_tipi === "yag" ? "border-sizma" : "border-cizgi"}`}
+                      >
+                        {formData.odeme_tipi === "yag" && <span className="w-2.5 h-2.5 rounded-full bg-sizma" />}
+                      </span>
+                      <div className="readout text-2xl">{yuvarla(hesap.toplamYag)}</div>
+                    </div>
+                  </div>
+                </div>
+
+                <div>
+                  <label className="label text-center">Verilen bidon numaraları</label>
+
+                  <textarea
+                    ref={bidonRef}
+                    rows={1}
+                    name="bidon_no"
+                    value={formData.bidon_no}
+                    onFocus={autoGrowBidon}
+                    onInput={autoGrowBidon}
+                    onKeyDown={(e) => {
+                      if (e.key === " " || e.key === "Enter") {
+                        e.preventDefault()
+                        setFormData((prev) => {
+                          const v = prev.bidon_no || ""
+                          if (v.length > 0 && !v.endsWith("-"))
+                            return { ...prev, bidon_no: v + "-" }
+                          return prev
+                        })
+                        requestAnimationFrame(autoGrowBidon)
+                      }
+                    }}
+                    onChange={(e) => {
+                      let v = e.target.value
+
+                      v = v.replace(/[^\d-\n]/g, "")
+                      v = v.replace(/-+/g, "-")
+                      v = v
+                        .split("\n")
+                        .map((line) => {
+                          const parts = line.split("-")
+                          const fixedParts = parts.map((p) => p.slice(0, 4))
+                          return fixedParts.join("-")
+                        })
+                        .join("\n")
+
+                      setFormData((prev) => ({ ...prev, bidon_no: v }))
+                      requestAnimationFrame(autoGrowBidon)
+                    }}
+                    className="input readout text-lg text-center tracking-wider resize-none overflow-hidden"
+                    placeholder="1234-56-7890"
+                  />
+                </div>
+
+                <div className="card divide-y divide-dashed divide-cizgi max-w-sm mx-auto">
+                  <div className="flex items-baseline justify-between gap-4 px-4 py-2">
+                    <span className="text-sm text-murekkep/70">Şu an verilen bidon</span>
+                    <span className="readout text-lg">{verilenBidonSayisi}</span>
+                  </div>
+                  <div className="flex items-baseline justify-between gap-4 px-4 py-2">
+                    <span className="text-sm text-murekkep/70">Bu numaraya verilen toplam bidon</span>
+                    <span className="readout text-lg">{toplamGecmisBidon + verilenBidonSayisi}</span>
+                  </div>
+                </div>
+
+                <div>
+                  <label className="label">İşlem notları</label>
+                  <textarea
+                    name="notlar"
+                    value={formData.notlar}
+                    onChange={handleChange}
+                    rows="3"
+                    className="input resize-none"
+                    placeholder="İşlem hakkında not ekleyin"
+                  />
+                </div>
+
+                <div className="flex gap-4 pt-2">
+                  <button onClick={() => setSecili(null)} className="btn-secondary w-1/3 py-3.5">
+                    İptal
+                  </button>
+
+                  <button
+                    onClick={handleKaydet}
+                    disabled={!formData.zeytin_kg || !formData.cikan_yag || !formData.kantar_bidon || !formData.bidon_no}
+                    className="btn-primary w-2/3 py-3.5 text-base"
+                  >
+                    <CheckCircle2 className="w-5 h-5" />
+                    İşlemi onayla
+                  </button>
                 </div>
               </div>
             )}
