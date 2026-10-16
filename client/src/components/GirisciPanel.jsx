@@ -2,6 +2,7 @@ import { useState, useEffect, useRef } from "react"
 import axios from "axios"
 import io from "socket.io-client"
 import { ClipboardList, ListChecks, MoreVertical, Pencil, RefreshCw, Undo2, X } from "lucide-react"
+import TarihSaat from "./TarihSaat"
 
 axios.defaults.baseURL = "/"
 
@@ -632,10 +633,7 @@ export default function GirisciPanel() {
                                 </td>
 
                                 <td className="px-5 py-3">
-                                  <div className="flex flex-col">
-                                    <span className="readout text-murekkep">{saat}</span>
-                                    <span className="text-xs text-murekkep/60">{tarih}</span>
-                                  </div>
+                                  <TarihSaat className="flex-col items-start" tarih={tarih} saat={saat} />
                                 </td>
 
                                 <td className="px-5 py-3 text-center w-36">

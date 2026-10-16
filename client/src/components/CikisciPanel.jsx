@@ -5,6 +5,7 @@ import io from "socket.io-client"
 import * as XLSX from "xlsx-js-style"
 import { saveAs } from "file-saver"
 import { Check, Download, X } from "lucide-react"
+import TarihSaat from "./TarihSaat"
 
 axios.defaults.baseURL = "/"
 const socket = io()
@@ -1222,15 +1223,11 @@ export default function CikisciPanel({ defaultSettings }) {
                   <p className="readout text-sm text-murekkep/60">
                     {normalizeTelefon(islem.telefon)}
                   </p>
-                  <p className="text-xs text-murekkep/50 mt-1">
-                    {new Date(islem.created_at).toLocaleString("tr-TR", {
-                      day: "2-digit",
-                      month: "2-digit",
-                      year: "numeric",
-                      hour: "2-digit",
-                      minute: "2-digit",
-                    })}
-                  </p>
+                  <TarihSaat
+                    className="mt-1.5"
+                    tarih={new Date(islem.created_at).toLocaleDateString("tr-TR", { day: "2-digit", month: "2-digit", year: "numeric" })}
+                    saat={new Date(islem.created_at).toLocaleTimeString("tr-TR", { hour: "2-digit", minute: "2-digit" })}
+                  />
                 </div>
               </div>
             ))
@@ -1395,7 +1392,7 @@ export default function CikisciPanel({ defaultSettings }) {
                     <p className="readout text-murekkep">
                       {new Date(seciliIslem.created_at).toLocaleDateString("tr-TR")}
                     </p>
-                    <p className="readout text-sm text-murekkep/60">
+                    <p className="readout text-murekkep">
                       {new Date(seciliIslem.created_at).toLocaleTimeString("tr-TR", { hour: "2-digit", minute: "2-digit" })}
                     </p>
                   </div>

@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useRef, useState, useCallback } from "react"
 import axios from "axios"
 import { CheckCircle2, RefreshCw, X } from "lucide-react"
+import TarihSaat from "./TarihSaat"
 import { hesaplaYagciPaneli } from "../utils/yagHesap"
 
 axios.defaults.baseURL = "/"
@@ -376,11 +377,11 @@ export default function YagciPanel({ defaultSettings }) {
                       <p className="readout text-sm text-murekkep/60">
                         {m.telefon ? normalizeTelefon(m.telefon) : "-"}
                       </p>
-                      <p className="text-xs text-murekkep/50 mt-1">
-                        {new Date(m.created_at).toLocaleDateString("tr-TR", { day: "numeric", month: "long", year: "numeric" })}
-                        {" · "}
-                        {new Date(m.created_at).toLocaleTimeString("tr-TR", { hour: "2-digit", minute: "2-digit" })}
-                      </p>
+                      <TarihSaat
+                        className="mt-1.5"
+                        tarih={new Date(m.created_at).toLocaleDateString("tr-TR", { day: "2-digit", month: "2-digit", year: "numeric" })}
+                        saat={new Date(m.created_at).toLocaleTimeString("tr-TR", { hour: "2-digit", minute: "2-digit" })}
+                      />
                     </div>
                   </button>
                 )
