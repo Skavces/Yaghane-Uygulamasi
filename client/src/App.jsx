@@ -42,23 +42,23 @@ function App() {
 
   return (
     <div className="min-h-screen bg-zemin">
-      <header className="bg-zeytin sticky top-0 z-50">
+      <header className="bg-[#E9ECE2] shadow-[0_1px_0_0_#D9DCD4] sticky top-0 z-50">
         <div className="max-w-7xl mx-auto px-6 h-14 flex justify-between items-center">
           <div className="flex items-center gap-3">
-            <img src="/zeytin-logo.svg" alt="logo" className="w-9 h-9 bg-white rounded p-0.5" />
+            <img src="/zeytin-logo.svg" alt="logo" className="w-8 h-8" />
             <div className="flex items-baseline gap-3">
-              <h1 className="font-display text-base font-bold tracking-wide text-white">
+              <h1 className="font-display text-base font-bold tracking-wide text-murekkep">
                 KAYA KARDEŞLER
               </h1>
-              <span className="hidden sm:inline text-sm text-white/70">Zeytinyağı Fabrikası</span>
+              <span className="hidden sm:inline text-sm text-murekkep/60">Zeytinyağı Fabrikası</span>
             </div>
           </div>
 
           <div className="flex items-center gap-4">
-            <span className="text-sm font-semibold text-white/90">{istasyon}</span>
+            <span className="text-sm font-semibold text-murekkep/70">{istasyon}</span>
             <button
               onClick={handleLogout}
-              className="btn border border-white/40 text-white hover:bg-white/15 py-1.5"
+              className="btn-secondary py-1.5"
             >
               Çıkış yap
             </button>
