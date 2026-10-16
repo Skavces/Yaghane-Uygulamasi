@@ -161,7 +161,10 @@ db.serialize(() => {
     `CREATE TABLE IF NOT EXISTS settings (
       id INTEGER PRIMARY KEY AUTOINCREMENT,
       yag_fiyati REAL DEFAULT 300,
-      hak_oran REAL DEFAULT 8
+      hak_oran REAL DEFAULT 8,
+      yag_ile_odeme REAL DEFAULT 230,
+      bidon_ucreti REAL DEFAULT 400,
+      sikim_bedeli REAL DEFAULT 5
     )`,
     (err) => {
       if (err) console.error("Settings tablosu oluşturma hatası:", err.message)
@@ -175,6 +178,18 @@ db.serialize(() => {
       }
     }
   )
+
+  ;[
+    ["yag_ile_odeme", 230],
+    ["bidon_ucreti", 400],
+    ["sikim_bedeli", 5],
+  ].forEach(([kolon, varsayilan]) => {
+    db.run(`ALTER TABLE settings ADD COLUMN ${kolon} REAL DEFAULT ${varsayilan}`, (err) => {
+      if (err && !String(err.message || "").toLowerCase().includes("duplicate")) {
+        console.error(`settings.${kolon} kolon ekleme hatası:`, err.message)
+      }
+    })
+  })
 
   db.run(`ALTER TABLE islemler ADD COLUMN iade_bidonlar TEXT DEFAULT ''`, (err) => {
     if (err) {
@@ -204,28 +219,53 @@ const io = new Server(server, { cors: { origin: true, credentials: true } })
 app.get("/api/settings", (req, res) => {
   db.get("SELECT * FROM settings LIMIT 1", [], (err, row) => {
     if (err) return res.status(500).json(err)
-    if (!row) return res.json({ yag_fiyati: 300, hak_oran: 8 })
+    if (!row) return res.json({ yag_fiyati: 300, hak_oran: 8, yag_ile_odeme: 230, bidon_ucreti: 400, sikim_bedeli: 5 })
     res.json(row)
   })
 })
 
 app.put("/api/settings", (req, res) => {
   const { yag_fiyati, hak_oran } = req.body
+  // Yeni alanlar gönderilmezse (eski istemci) mevcut değer korunur.
+  const yagIleOdeme = req.body.yag_ile_odeme ?? null
+  const bidonUcreti = req.body.bidon_ucreti ?? null
+  const sikimBedeli = req.body.sikim_bedeli ?? null
+
+  const yayinla = (mesaj) => {
+    db.get("SELECT * FROM settings LIMIT 1", [], (errSel, guncel) => {
+      if (!errSel && guncel) io.emit("settings-updated", guncel)
+      res.json({ msg: mesaj })
+    })
+  }
+
   db.get("SELECT id FROM settings LIMIT 1", [], (err, row) => {
     if (err) return res.status(500).json(err)
-    
+
     if (row) {
-       db.run("UPDATE settings SET yag_fiyati=?, hak_oran=? WHERE id=?", [yag_fiyati, hak_oran, row.id], (err2) => {
-          if (err2) return res.status(500).json(err2)
-          io.emit("settings-updated", { yag_fiyati, hak_oran })
-          res.json({ msg: "Ayarlar güncellendi" })
-       })
+       db.run(
+         `UPDATE settings SET
+            yag_fiyati=?,
+            hak_oran=?,
+            yag_ile_odeme=COALESCE(?, yag_ile_odeme),
+            bidon_ucreti=COALESCE(?, bidon_ucreti),
+            sikim_bedeli=COALESCE(?, sikim_bedeli)
+          WHERE id=?`,
+         [yag_fiyati, hak_oran, yagIleOdeme, bidonUcreti, sikimBedeli, row.id],
+         (err2) => {
+           if (err2) return res.status(500).json(err2)
+           yayinla("Ayarlar güncellendi")
+         }
+       )
     } else {
-       db.run("INSERT INTO settings (yag_fiyati, hak_oran) VALUES (?, ?)", [yag_fiyati, hak_oran], function(err2) {
-          if (err2) return res.status(500).json(err2)
-          io.emit("settings-updated", { yag_fiyati, hak_oran })
-          res.json({ msg: "Ayarlar oluşturuldu" })
-       })
+       db.run(
+         `INSERT INTO settings (yag_fiyati, hak_oran, yag_ile_odeme, bidon_ucreti, sikim_bedeli)
+          VALUES (?, ?, COALESCE(?, 230), COALESCE(?, 400), COALESCE(?, 5))`,
+         [yag_fiyati, hak_oran, yagIleOdeme, bidonUcreti, sikimBedeli],
+         function(err2) {
+           if (err2) return res.status(500).json(err2)
+           yayinla("Ayarlar oluşturuldu")
+         }
+       )
     }
   })
 })
