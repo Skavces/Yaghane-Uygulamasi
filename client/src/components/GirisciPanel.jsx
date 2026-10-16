@@ -619,7 +619,7 @@ export default function GirisciPanel() {
                             return (
                               <tr key={kayit.id} className="hover:bg-zemin/60 transition-colors">
                                 <td className="px-5 py-3">
-                                  <span className="fis-no text-base">№ {kayit.musteri_no}</span>
+                                  <span className="fis-no text-base">No {kayit.musteri_no}</span>
                                 </td>
 
                                 <td className="px-5 py-3 whitespace-nowrap">

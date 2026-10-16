@@ -363,7 +363,7 @@ export default function YagciPanel({ defaultSettings }) {
                       : "border-cizgi bg-white hover:bg-zemin"
                       }`}
                   >
-                    <span className="fis-no text-lg">№ {m.musteri_no}</span>
+                    <span className="fis-no text-lg min-w-[4.75rem] justify-center">No {m.musteri_no}</span>
                     <div className="flex-1 min-w-0">
                       <div className="flex items-center gap-2">
                         <p className="font-semibold text-murekkep text-lg truncate flex-1">{m.ad_soyad}</p>
@@ -407,7 +407,7 @@ export default function YagciPanel({ defaultSettings }) {
                       {secili.telefon ? normalizeTelefon(secili.telefon) : "-"}
                     </p>
                   </div>
-                  <span className="fis-no text-2xl px-3 py-1">№ {secili.musteri_no}</span>
+                  <span className="fis-no text-2xl px-3 py-1">No {secili.musteri_no}</span>
                 </div>
 
                 <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
