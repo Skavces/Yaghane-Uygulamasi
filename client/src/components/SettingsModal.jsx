@@ -4,7 +4,6 @@ import axios from "axios"
 export default function SettingsModal({ onClose, onSave }) {
   const [formData, setFormData] = useState({
     yag_fiyati: "",
-    hak_oran: "",
     yag_ile_odeme: "",
     bidon_ucreti: "",
     sikim_bedeli: "",
@@ -21,7 +20,6 @@ export default function SettingsModal({ onClose, onSave }) {
       const res = await axios.get("/api/settings")
       setFormData({
         yag_fiyati: res.data.yag_fiyati,
-        hak_oran: res.data.hak_oran,
         yag_ile_odeme: res.data.yag_ile_odeme,
         bidon_ucreti: res.data.bidon_ucreti,
         sikim_bedeli: res.data.sikim_bedeli,
@@ -73,16 +71,6 @@ export default function SettingsModal({ onClose, onSave }) {
               type="number"
               value={formData.yag_fiyati}
               onChange={(e) => setFormData({...formData, yag_fiyati: e.target.value})}
-              className="input readout text-lg"
-            />
-          </div>
-
-          <div>
-            <label className="label">Hak oranı (%)</label>
-            <input
-              type="number"
-              value={formData.hak_oran}
-              onChange={(e) => setFormData({...formData, hak_oran: e.target.value})}
               className="input readout text-lg"
             />
           </div>

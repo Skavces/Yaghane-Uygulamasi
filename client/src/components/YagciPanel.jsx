@@ -28,7 +28,6 @@ export default function YagciPanel({ defaultSettings }) {
   const [listeHata, setListeHata] = useState("")
   const [secili, setSecili] = useState(null)
 
-  const defOran = defaultSettings?.hak_oran || "8"
   const defFiyat = defaultSettings?.yag_fiyati || "300"
   const defYagIleOdeme = String(defaultSettings?.yag_ile_odeme ?? "230")
   const defBidonUcreti = String(defaultSettings?.bidon_ucreti ?? "400")
@@ -38,7 +37,6 @@ export default function YagciPanel({ defaultSettings }) {
     zeytin_kg: "",
     cikan_yag: "",
     kantar_bidon: "",
-    hak_oran: defOran,
     yag_fiyati: defFiyat,
     yag_ile_odeme: defYagIleOdeme,
     bidon_ucreti: defBidonUcreti,

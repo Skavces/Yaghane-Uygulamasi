@@ -219,13 +219,13 @@ const io = new Server(server, { cors: { origin: true, credentials: true } })
 app.get("/api/settings", (req, res) => {
   db.get("SELECT * FROM settings LIMIT 1", [], (err, row) => {
     if (err) return res.status(500).json(err)
-    if (!row) return res.json({ yag_fiyati: 300, hak_oran: 8, yag_ile_odeme: 230, bidon_ucreti: 400, sikim_bedeli: 5 })
+    if (!row) return res.json({ yag_fiyati: 300, yag_ile_odeme: 230, bidon_ucreti: 400, sikim_bedeli: 5 })
     res.json(row)
   })
 })
 
 app.put("/api/settings", (req, res) => {
-  const { yag_fiyati, hak_oran } = req.body
+  const { yag_fiyati } = req.body
   // Yeni alanlar gönderilmezse (eski istemci) mevcut değer korunur.
   const yagIleOdeme = req.body.yag_ile_odeme ?? null
   const bidonUcreti = req.body.bidon_ucreti ?? null
@@ -245,12 +245,11 @@ app.put("/api/settings", (req, res) => {
        db.run(
          `UPDATE settings SET
             yag_fiyati=?,
-            hak_oran=?,
             yag_ile_odeme=COALESCE(?, yag_ile_odeme),
             bidon_ucreti=COALESCE(?, bidon_ucreti),
             sikim_bedeli=COALESCE(?, sikim_bedeli)
           WHERE id=?`,
-         [yag_fiyati, hak_oran, yagIleOdeme, bidonUcreti, sikimBedeli, row.id],
+         [yag_fiyati, yagIleOdeme, bidonUcreti, sikimBedeli, row.id],
          (err2) => {
            if (err2) return res.status(500).json(err2)
            yayinla("Ayarlar güncellendi")
@@ -258,9 +257,9 @@ app.put("/api/settings", (req, res) => {
        )
     } else {
        db.run(
-         `INSERT INTO settings (yag_fiyati, hak_oran, yag_ile_odeme, bidon_ucreti, sikim_bedeli)
-          VALUES (?, ?, COALESCE(?, 230), COALESCE(?, 400), COALESCE(?, 5))`,
-         [yag_fiyati, hak_oran, yagIleOdeme, bidonUcreti, sikimBedeli],
+         `INSERT INTO settings (yag_fiyati, yag_ile_odeme, bidon_ucreti, sikim_bedeli)
+          VALUES (?, COALESCE(?, 230), COALESCE(?, 400), COALESCE(?, 5))`,
+         [yag_fiyati, yagIleOdeme, bidonUcreti, sikimBedeli],
          function(err2) {
            if (err2) return res.status(500).json(err2)
            yayinla("Ayarlar oluşturuldu")
@@ -465,7 +464,7 @@ app.put("/api/yag-islem/:id", (req, res) => {
     [
       zeytin_kg,
       cikan_yag,
-      hak_oran,
+      hak_oran ?? 0,
       yag_fiyati,
       firma_hakki,
       firma_hakki_tl,

@@ -10,7 +10,7 @@ const socket = io()
 
 function App() {
   const [role, setRole] = useState(null) 
-  const [settings, setSettings] = useState({ yag_fiyati: 300, hak_oran: 8 })
+  const [settings, setSettings] = useState({ yag_fiyati: 300 })
 
 
   useEffect(() => {
