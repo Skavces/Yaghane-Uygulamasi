@@ -34,13 +34,13 @@ export default function Login({ onLogin }) {
           </div>
         </div>
 
-        <div className="card grid grid-cols-1 md:grid-cols-3 divide-y md:divide-y-0 md:divide-x divide-cizgi overflow-hidden">
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
           {roles.map((role, index) => (
             <button
               key={role.id}
               type="button"
               onClick={() => handleLogin(role.id)}
-              className="group text-left p-6 hover:bg-zemin transition-colors"
+              className="card group text-left p-6 hover:border-zeytin transition-colors"
             >
               <div className="flex items-center justify-between mb-6">
                 <span className="fis-no">{index + 1}</span>
