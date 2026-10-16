@@ -201,7 +201,7 @@ export default function Login({ onLogin }) {
           <div className="inline-flex items-center gap-3">
             <div className="inline-flex items-center gap-2 px-5 py-3 rounded-full bg-white/70 border border-slate-200 shadow-sm backdrop-blur-sm">
               <span className="text-xs text-slate-500 font-medium">
-                Made by
+                Tasarım & Kodlama
               </span>
               <a
                 href="https://selimkavaklicesme.com"
@@ -209,7 +209,7 @@ export default function Login({ onLogin }) {
                 rel="noopener noreferrer"
                 className="text-sm font-bold text-slate-700 hover:text-slate-900 transition"
               >
-                Selim Kavaklıçeşme
+                www.selimkavaklicesme.com
               </a>
               <span className="text-slate-300">•</span>
               <a

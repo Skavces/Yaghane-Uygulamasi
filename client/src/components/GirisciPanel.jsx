@@ -188,6 +188,7 @@ export default function GirisciPanel() {
         ad_soyad: duzenleModal.ad_soyad,
         telefon: duzenleModal.telefon,
         odeme_tipi: duzenleModal.odeme_tipi,
+        giris_durum: duzenleModal.giris_durum,
       })
       setMesajAnim("spin")
       setMesaj("Kayıt güncellendi.")
@@ -326,6 +327,26 @@ export default function GirisciPanel() {
                   </button>
                 </div>
               </div>
+
+              <div>
+                <label className="block text-sm font-bold text-slate-700 mb-2 uppercase tracking-wide">Durum</label>
+                <div className="grid grid-cols-2 gap-3">
+                  <button
+                    type="button"
+                    onClick={() => setDuzenleModal((p) => ({ ...p, giris_durum: "sikilacak" }))}
+                    className={`px-4 py-3 rounded-2xl border-2 font-black transition shadow-sm ${duzenleModal.giris_durum !== "bekleyecek" ? "border-emerald-500 bg-emerald-50 text-emerald-700" : "border-slate-200 bg-white text-slate-600 hover:bg-slate-50"}`}
+                  >
+                    SIKILACAK
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setDuzenleModal((p) => ({ ...p, giris_durum: "bekleyecek" }))}
+                    className={`px-4 py-3 rounded-2xl border-2 font-black transition shadow-sm ${duzenleModal.giris_durum === "bekleyecek" ? "border-indigo-500 bg-indigo-50 text-indigo-700" : "border-slate-200 bg-white text-slate-600 hover:bg-slate-50"}`}
+                  >
+                    BEKLEYECEK
+                  </button>
+                </div>
+              </div>
             </div>
 
             <div className="flex gap-3 mt-7">
@@ -359,7 +380,7 @@ export default function GirisciPanel() {
       <div className="absolute top-20 right-1/4 w-96 h-96 bg-emerald-200/30 rounded-full blur-3xl animate-pulse pointer-events-none"></div>
       <div className="absolute bottom-40 left-1/3 w-72 h-72 bg-amber-200/30 rounded-full blur-3xl animate-pulse delay-1000 pointer-events-none"></div>
 
-      <div className="max-w-5xl mx-auto relative z-10">
+      <div className="max-w-7xl mx-auto relative z-10">
         <div className="text-center mb-8">
           <h1 className="text-4xl font-black text-transparent bg-clip-text bg-gradient-to-r from-emerald-600 via-emerald-700 to-emerald-800 mb-2 tracking-tight">
             Müşteri Giriş Paneli
@@ -371,7 +392,7 @@ export default function GirisciPanel() {
           <div className="flex">
             <button
               onClick={() => setActiveTab("form")}
-              className={`flex-1 py-5 px-6 font-bold text-sm transition relative ${activeTab === "form"
+              className={`flex-1 py-8 px-6 font-bold text-sm transition relative ${activeTab === "form"
                 ? "text-slate-800 bg-white"
                 : "text-slate-500 bg-gradient-to-b from-slate-50 to-slate-100 hover:from-slate-100 hover:to-slate-50"
                 }`}
@@ -394,7 +415,7 @@ export default function GirisciPanel() {
 
             <button
               onClick={() => setActiveTab("liste")}
-              className={`flex-1 py-5 px-6 font-bold text-sm transition relative ${activeTab === "liste"
+              className={`flex-1 py-8 px-6 font-bold text-sm transition relative ${activeTab === "liste"
                 ? "text-slate-800 bg-white"
                 : "text-slate-500 bg-gradient-to-b from-slate-50 to-slate-100 hover:from-slate-100 hover:to-slate-50"
                 }`}

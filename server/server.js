@@ -111,6 +111,30 @@ db.serialize(() => {
     }
   })
 
+  db.run(`ALTER TABLE islemler ADD COLUMN yag_ile_odeme REAL`, (err) => {
+    if (err) {
+      if (!String(err.message || "").toLowerCase().includes("duplicate")) {
+        console.error("yag_ile_odeme kolon ekleme hatası:", err.message)
+      }
+    }
+  })
+
+  db.run(`ALTER TABLE islemler ADD COLUMN bidon_ucreti REAL`, (err) => {
+    if (err) {
+      if (!String(err.message || "").toLowerCase().includes("duplicate")) {
+        console.error("bidon_ucreti kolon ekleme hatası:", err.message)
+      }
+    }
+  })
+
+  db.run(`ALTER TABLE islemler ADD COLUMN sikim_bedeli REAL`, (err) => {
+    if (err) {
+      if (!String(err.message || "").toLowerCase().includes("duplicate")) {
+        console.error("sikim_bedeli kolon ekleme hatası:", err.message)
+      }
+    }
+  })
+
   db.run(`ALTER TABLE islemler ADD COLUMN kantar_bidon INTEGER DEFAULT 0`, (err) => {
     if (err) {
       if (!String(err.message || "").toLowerCase().includes("duplicate")) {
@@ -278,14 +302,14 @@ app.post("/api/giris", (req, res) => {
 // Kayıt düzenle
 app.put("/api/giris-duzenle/:id", (req, res) => {
   const id = req.params.id
-  const { musteri_no, ad_soyad, telefon, odeme_tipi } = req.body
+  const { musteri_no, ad_soyad, telefon, odeme_tipi, giris_durum } = req.body
   if (!musteri_no || !ad_soyad) {
     return res.status(400).json({ msg: "Eksik bilgi" })
   }
   const tel = normalizeTelefonTR(telefon)
   db.run(
-    "UPDATE islemler SET musteri_no=?, ad_soyad=?, telefon=?, odeme_tipi=? WHERE id=?",
-    [musteri_no, ad_soyad, tel || "", odeme_tipi || "yag", id],
+    "UPDATE islemler SET musteri_no=?, ad_soyad=?, telefon=?, odeme_tipi=?, giris_durum=? WHERE id=?",
+    [musteri_no, ad_soyad, tel || "", odeme_tipi || "yag", giris_durum || "sikilacak", id],
     function (err) {
       if (err) {
         if (err.message && err.message.includes("UNIQUE")) {
@@ -372,6 +396,9 @@ app.put("/api/yag-islem/:id", (req, res) => {
     bidon_no,
     notlar,
     kantar_bidon,
+    yag_ile_odeme,
+    bidon_ucreti,
+    sikim_bedeli,
   } = req.body
 
   const id = req.params.id
@@ -387,6 +414,9 @@ app.put("/api/yag-islem/:id", (req, res) => {
                bidon_no=?,
                notlar=?,
                kantar_bidon=?,
+               yag_ile_odeme=?,
+               bidon_ucreti=?,
+               sikim_bedeli=?,
                status=2
                WHERE id=?`
 
@@ -403,6 +433,9 @@ app.put("/api/yag-islem/:id", (req, res) => {
       bidon_no,
       notlar,
       kantar_bidon || 0,
+      yag_ile_odeme ?? null,
+      bidon_ucreti ?? null,
+      sikim_bedeli ?? null,
       id,
     ],
     function (err) {
@@ -503,6 +536,22 @@ app.put("/api/bidon-no/:id", (req, res) => {
         res.json({ msg: "Bidon numaraları güncellendi", bidon_no: outBidon, iade_bidonlar: outIade })
       }
     )
+  })
+})
+
+app.put("/api/not/:id", (req, res) => {
+  const id = req.params.id
+  const notlar = String(req.body?.notlar ?? "").slice(0, 1000)
+
+  db.get("SELECT id, status FROM islemler WHERE id = ?", [id], (err, row) => {
+    if (err) return res.status(500).json(err)
+    if (!row) return res.status(404).json({ msg: "Kayıt bulunamadı" })
+
+    db.run("UPDATE islemler SET notlar = ? WHERE id = ?", [notlar, id], function (err2) {
+      if (err2) return res.status(500).json(err2)
+      io.emit("veri-guncellendi")
+      res.json({ msg: "Not kaydedildi", notlar })
+    })
   })
 })
 

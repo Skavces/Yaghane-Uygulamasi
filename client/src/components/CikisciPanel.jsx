@@ -1,6 +1,6 @@
 import { useState, useEffect, useMemo, useRef, useCallback } from "react"
 import axios from "axios"
-import { hesaplaYagIslemi } from "../utils/yagHesap"
+import { hesaplaYagIslemi, hesaplaYagciPaneli } from "../utils/yagHesap"
 import io from "socket.io-client"
 import * as XLSX from "xlsx-js-style"
 import { saveAs } from "file-saver"
@@ -22,6 +22,8 @@ export default function CikisciPanel({ defaultSettings }) {
   const [isEditing, setIsEditing] = useState(false)
   const [bidonEdit, setBidonEdit] = useState("")
   const [bidonSaving, setBidonSaving] = useState(false)
+  const [notEdit, setNotEdit] = useState("")
+  const [notSaving, setNotSaving] = useState(false)
   const textareaRef = useRef(null);
   const defFiyat = defaultSettings?.yag_fiyati || "300"
 
@@ -37,7 +39,8 @@ export default function CikisciPanel({ defaultSettings }) {
   }, [seciliIslem?.id]);
 
   const [iadeModalAcik, setIadeModalAcik] = useState(false)
-  const [iadeAdet, setIadeAdet] = useState("")
+  const [iadeSecim, setIadeSecim] = useState([])
+  const [geriAlSecim, setGeriAlSecim] = useState([])
   const [satisForm, setSatisForm] = useState({
     ad_soyad: "",
     telefon: "",
@@ -58,6 +61,10 @@ export default function CikisciPanel({ defaultSettings }) {
     const guncel = tumListe.find((x) => x.id === seciliIslem.id)
     if (guncel) setSeciliIslem(guncel)
   }, [tumListe])
+
+  useEffect(() => {
+    setNotEdit(seciliIslem?.notlar || "")
+  }, [seciliIslem?.id])
 
   const fetchListe = async () => {
     try {
@@ -232,9 +239,35 @@ export default function CikisciPanel({ defaultSettings }) {
     })
   }
 
+  const yeniSistemMi = (islem) => islem?.sikim_bedeli != null
+
+  const calculateYeniSistem = (islem) =>
+    hesaplaYagciPaneli({
+      zeytin:      islem.zeytin_kg,
+      cikanYag:    islem.cikan_yag,
+      kantarBidon: islem.kantar_bidon,
+      yagIleOdeme: islem.yag_ile_odeme,
+      bidonUcreti: islem.bidon_ucreti,
+      sikimBedeli: islem.sikim_bedeli,
+    })
+
+  const yuvarla = (v) => (Number.isFinite(v) ? Math.round(v * 100) / 100 : 0)
+
   const verileriHazirla = useCallback((islem) => {
     if (islem.odeme_tipi === "SATIS") {
       return { kalanYag: islem.cikan_yag, tutar: islem.firma_hakki_tl, fiyat: islem.yag_fiyati }
+    }
+
+    if (yeniSistemMi(islem)) {
+      const h = calculateYeniSistem(islem)
+      const kalan = islem.odeme_tipi === "para" ? h.netYag : Math.max(0, h.netYag - h.toplamYag)
+      return {
+        kalanYag: kalan.toFixed(1),
+        verilecekBidon: kalan > 0 ? Math.ceil(kalan / 50) : 0,
+        randiman: h.oran,
+        firmaHakki: islem.firma_hakki ?? 0,
+        firmaHakkiTL: islem.firma_hakki_tl ?? 0,
+      }
     }
     
     const hesap = calculateYagIslemi(islem)
@@ -367,6 +400,11 @@ export default function CikisciPanel({ defaultSettings }) {
     return verileriHazirla(seciliIslem)
   }, [seciliIslem, verileriHazirla])
 
+  const yeniDetay = useMemo(() => {
+    if (!seciliIslem || !yeniSistemMi(seciliIslem)) return {}
+    return calculateYeniSistem(seciliIslem)
+  }, [seciliIslem])
+
   const hesapDetay = useMemo(() => {
     if (!seciliIslem) return { hakKGround: 0, paraTL: "0.00" }
     
@@ -420,9 +458,9 @@ export default function CikisciPanel({ defaultSettings }) {
   }, [seciliIslem, bidonKalanHesapla])
 
   const ayniTelefonTumBidonlar = useMemo(() => {
-    if (!seciliIslem?.telefon) return { verilenler: [], iadeler: [], kalanlar: [] }
+    if (!seciliIslem?.telefon) return { verilenler: [], iadeler: [], iadeKayitlari: [], kalanlar: [] }
     const tel = normalizeTelefon(seciliIslem.telefon)
-    if (!tel) return { verilenler: [], iadeler: [], kalanlar: [] }
+    if (!tel) return { verilenler: [], iadeler: [], iadeKayitlari: [], kalanlar: [] }
 
     const ilgiliKayitlar = tumListe.filter((x) => {
       if (x.odeme_tipi === "SATIS") return false
@@ -431,6 +469,7 @@ export default function CikisciPanel({ defaultSettings }) {
 
     const tumVerilenler = []
     const tumIadeler = []
+    const iadeKayitlari = []
 
     for (const kayit of ilgiliKayitlar) {
       const verilenList = parseBidonList(kayit.bidon_no)
@@ -438,6 +477,7 @@ export default function CikisciPanel({ defaultSettings }) {
       
       tumVerilenler.push(...verilenList)
       tumIadeler.push(...iadeList)
+      for (const no of iadeList) iadeKayitlari.push({ no: String(no), kayitId: kayit.id })
     }
 
     const iadeCounts = {}
@@ -459,6 +499,7 @@ export default function CikisciPanel({ defaultSettings }) {
     return {
       verilenler: tumVerilenler,
       iadeler: tumIadeler,
+      iadeKayitlari,
       kalanlar: kalanlar
     }
   }, [tumListe, seciliIslem])
@@ -532,7 +573,7 @@ export default function CikisciPanel({ defaultSettings }) {
 
   const openIadeModal = () => {
     if (!seciliIslem) return
-    setIadeAdet("")
+    setIadeSecim([]); setGeriAlSecim([])
     setIadeModalAcik(true)
   }
 
@@ -554,6 +595,26 @@ export default function CikisciPanel({ defaultSettings }) {
       .join("\n")
 
     return v
+  }
+
+  const handleNotKaydet = async () => {
+    if (!seciliIslem) return
+    setNotSaving(true)
+    try {
+      await axios.put(`/api/not/${seciliIslem.id}`, { notlar: notEdit })
+
+      setMesajAnim("spin")
+      setMesaj("Not kaydedildi.")
+      setSeciliIslem((prev) => (prev ? { ...prev, notlar: notEdit } : prev))
+      fetchListe()
+      setTimeout(() => setMesajAnim("tik"), 1200)
+      setTimeout(() => setMesaj(""), 2500)
+    } catch (e) {
+      console.error(e)
+      alert("Not kaydedilirken hata oluştu.")
+    } finally {
+      setNotSaving(false)
+    }
   }
 
   const handleBidonDuzenleKaydet = async () => {
@@ -579,35 +640,60 @@ export default function CikisciPanel({ defaultSettings }) {
   }
 
   const handleIadeKaydet = async () => {
-
     if (!seciliIslem) return
 
     try {
-      const mevcutIade = parseBidonList(seciliIslem.iade_bidonlar ?? seciliIslem.geri_alinan_bidonlar ?? "")
-      const kalan = ayniTelefonTumBidonlar.kalanlar
-
-      let adet = parseInt(String(iadeAdet || "").replace(/\D/g, ""), 10)
-      if (!Number.isFinite(adet) || adet <= 0) {
-        alert("İade adedi geçersiz.")
+      const { kalanlar, iadeKayitlari } = ayniTelefonTumBidonlar
+      const eklenecek = iadeSecim
+        .filter((i) => i >= 0 && i < kalanlar.length)
+        .map((i) => String(kalanlar[i]))
+      const geriAlinacak = geriAlSecim.filter((i) => i >= 0 && i < iadeKayitlari.length)
+      if (eklenecek.length === 0 && geriAlinacak.length === 0) {
+        alert("Seçili bidon yok.")
         return
       }
 
-      if (adet > kalan.length) adet = kalan.length
+      // kayit id -> iade listesi
+      const tel = normalizeTelefon(seciliIslem.telefon)
+      const orijinal = {}
+      for (const k of tumListe) {
+        if (k.odeme_tipi === "SATIS" || normalizeTelefon(k.telefon) !== tel) continue
+        orijinal[k.id] = parseBidonList(k.iade_bidonlar ?? k.geri_alinan_bidonlar ?? "").map(String)
+      }
+      const yeni = Object.fromEntries(Object.entries(orijinal).map(([id, l]) => [id, [...l]]))
 
-      const eklenecek = kalan.slice(0, adet)
-      const yeniIadeList = [...mevcutIade.map(String), ...eklenecek.map(String)]
-      const payload = { iade_bidonlar: formatBidonList(yeniIadeList) }
+      for (const i of geriAlinacak) {
+        const { no, kayitId } = iadeKayitlari[i]
+        const liste = yeni[kayitId]
+        const idx = liste ? liste.indexOf(no) : -1
+        if (idx !== -1) liste.splice(idx, 1)
+      }
+      if (!yeni[seciliIslem.id]) yeni[seciliIslem.id] = []
+      yeni[seciliIslem.id].push(...eklenecek)
 
-      await axios.put(`/api/bidon-iade/${seciliIslem.id}`, payload)
+      const degisenler = Object.keys(yeni).filter(
+        (id) => formatBidonList(yeni[id]) !== formatBidonList(orijinal[id] || [])
+      )
+      await Promise.all(
+        degisenler.map((id) =>
+          axios.put(`/api/bidon-iade/${id}`, { iade_bidonlar: formatBidonList(yeni[id]) })
+        )
+      )
 
       setMesajAnim("spin")
-      setMesaj("Bidon iadesi kaydedildi.")
+      setMesaj(
+        geriAlinacak.length > 0 && eklenecek.length === 0
+          ? "Bidon iadesi geri alındı."
+          : "Bidon iadesi kaydedildi."
+      )
       setIadeModalAcik(false)
-      setIadeAdet("")
+      setIadeSecim([])
+      setGeriAlSecim([])
       if (aktifTab === "bidonlar") {
         setSeciliIslem(null)
-      } else {
-        setSeciliIslem((prev) => (prev ? { ...prev, iade_bidonlar: payload.iade_bidonlar } : prev))
+      } else if (yeni[seciliIslem.id]) {
+        const out = formatBidonList(yeni[seciliIslem.id])
+        setSeciliIslem((prev) => (prev ? { ...prev, iade_bidonlar: out } : prev))
       }
       fetchListe()
       setTimeout(() => setMesajAnim("tik"), 1200)
@@ -627,7 +713,7 @@ export default function CikisciPanel({ defaultSettings }) {
       setMesajAnim("spin")
       setMesaj("İadeler temizlendi.")
       setIadeModalAcik(false)
-      setIadeAdet("")
+      setIadeSecim([]); setGeriAlSecim([])
       setSeciliIslem((prev) => (prev ? { ...prev, iade_bidonlar: "" } : prev))
       fetchListe()
       setTimeout(() => setMesajAnim("tik"), 1200)
@@ -770,26 +856,97 @@ export default function CikisciPanel({ defaultSettings }) {
               </div>
 
               <div>
-                <label className="block text-sm font-black text-slate-700 mb-2">Kaç bidon iade alındı / geri al?</label>
-                <input
-                  value={iadeAdet}
-                  onChange={(e) => {
-                    const v = e.target.value.replace(/\D/g, "").slice(0, 3)
-                    setIadeAdet(v)
-                  }}
-                  inputMode="numeric"
-                  placeholder="Örn: 2"
-                  className="w-full px-4 py-3 bg-white border-2 border-slate-200 rounded-2xl text-lg font-black text-slate-800 focus:outline-none focus:border-emerald-400 transition-all shadow-sm"
-                />
+                <div className="flex items-center justify-between mb-2">
+                  <label className="block text-sm font-black text-slate-700">İade alınacak bidonlara tıklayın</label>
+                  {ayniTelefonTumBidonlar.kalanlar.length > 0 && (
+                    <button
+                      type="button"
+                      onClick={() =>
+                        setIadeSecim(
+                          iadeSecim.length === ayniTelefonTumBidonlar.kalanlar.length
+                            ? []
+                            : ayniTelefonTumBidonlar.kalanlar.map((_, i) => i)
+                        )
+                      }
+                      className="text-xs font-black text-emerald-700 hover:text-emerald-900 underline"
+                    >
+                      {iadeSecim.length === ayniTelefonTumBidonlar.kalanlar.length ? "Seçimi Temizle" : "Tümünü Seç"}
+                    </button>
+                  )}
+                </div>
+
+                {ayniTelefonTumBidonlar.kalanlar.length === 0 ? (
+                  <div className="text-center py-6 text-slate-400 font-bold bg-slate-50 rounded-2xl border-2 border-dashed border-slate-200">
+                    Müşterinin üzerinde bidon kalmadı.
+                  </div>
+                ) : (
+                  <div className="flex flex-wrap gap-2 max-h-48 overflow-y-auto p-1">
+                    {ayniTelefonTumBidonlar.kalanlar.map((no, i) => {
+                      const secili = iadeSecim.includes(i)
+                      return (
+                        <button
+                          key={`${no}-${i}`}
+                          type="button"
+                          onClick={() =>
+                            setIadeSecim((prev) => (prev.includes(i) ? prev.filter((x) => x !== i) : [...prev, i]))
+                          }
+                          className={`px-4 py-2 rounded-xl border-2 text-lg font-black tracking-wider transition-all ${secili
+                            ? "bg-emerald-600 border-emerald-700 text-white shadow-md"
+                            : "bg-amber-50 border-amber-300 text-amber-900 hover:border-emerald-400"
+                            }`}
+                        >
+                          {secili ? "✓ " : ""}{no}
+                        </button>
+                      )
+                    })}
+                  </div>
+                )}
               </div>
+
+              {ayniTelefonTumBidonlar.iadeKayitlari.length > 0 && (
+                <div>
+                  <label className="block text-sm font-black text-slate-700 mb-2">
+                    İade edilmiş bidonlar (geri almak için tıklayın)
+                  </label>
+                  <div className="flex flex-wrap gap-2 max-h-40 overflow-y-auto p-1">
+                    {ayniTelefonTumBidonlar.iadeKayitlari.map(({ no }, i) => {
+                      const secili = geriAlSecim.includes(i)
+                      return (
+                        <button
+                          key={`iade-${no}-${i}`}
+                          type="button"
+                          onClick={() =>
+                            setGeriAlSecim((prev) => (prev.includes(i) ? prev.filter((x) => x !== i) : [...prev, i]))
+                          }
+                          className={`px-4 py-2 rounded-xl border-2 text-lg font-black tracking-wider transition-all ${secili
+                            ? "bg-rose-600 border-rose-700 text-white shadow-md line-through"
+                            : "bg-emerald-50 border-emerald-300 text-emerald-800 hover:border-rose-400"
+                            }`}
+                        >
+                          {no}
+                        </button>
+                      )
+                    })}
+                  </div>
+                </div>
+              )}
 
               <div>
                 <button
                   type="button"
                   onClick={handleIadeKaydet}
-                  className="w-full py-4 bg-gradient-to-r from-emerald-500 to-emerald-600 hover:from-emerald-600 hover:to-emerald-700 text-white font-bold rounded-2xl shadow-lg transition-all"
+                  disabled={iadeSecim.length === 0 && geriAlSecim.length === 0}
+                  className={`w-full py-4 font-bold rounded-2xl shadow-lg transition-all ${iadeSecim.length === 0 && geriAlSecim.length === 0
+                    ? "bg-slate-300 text-slate-500 cursor-not-allowed"
+                    : "bg-gradient-to-r from-emerald-500 to-emerald-600 hover:from-emerald-600 hover:to-emerald-700 text-white"
+                    }`}
                 >
-                  İade Ekle
+                  {iadeSecim.length === 0 && geriAlSecim.length === 0
+                    ? "Bidon Seçin"
+                    : [
+                        iadeSecim.length > 0 ? `${iadeSecim.length} Bidonu İade Al` : "",
+                        geriAlSecim.length > 0 ? `${geriAlSecim.length} İadeyi Geri Al` : "",
+                      ].filter(Boolean).join(" • ")}
                 </button>
               </div>
             </div>
@@ -1208,7 +1365,7 @@ export default function CikisciPanel({ defaultSettings }) {
                               new Date(b.finished_at || b.created_at) - new Date(a.finished_at || a.created_at)
                             )[0]
                             setSeciliIslem(enSon)
-                            setIadeAdet("")
+                            setIadeSecim([]); setGeriAlSecim([])
                             setIadeModalAcik(true)
                           }}
                           className="bg-white p-8 rounded-2xl border-2 border-slate-200 shadow-sm hover:shadow-lg hover:border-violet-300 cursor-pointer transition-all flex justify-between items-start"
@@ -1279,6 +1436,128 @@ export default function CikisciPanel({ defaultSettings }) {
                     <p className="text-3xl font-black text-emerald-700">{seciliIslem.firma_hakki_tl} ₺</p>
                   </div>
                 </div>
+              ) : yeniSistemMi(seciliIslem) ? (
+                <>
+                    <div className="grid grid-cols-3 gap-4">
+                      <div>
+                        <label className="flex items-center justify-center min-h-[3.5rem] text-lg font-bold text-slate-700 mb-1 text-center leading-tight">Yağ ile Ödeme Bedeli (₺)</label>
+                        <div className="bg-white/80 border-slate-200 backdrop-blur-sm p-4 rounded-2xl border-2 shadow-lg text-center">
+                          <div className="text-4xl font-black text-slate-800">{seciliIslem.yag_ile_odeme}</div>
+                        </div>
+                      </div>
+                      <div>
+                        <label className="flex items-center justify-center min-h-[3.5rem] text-lg font-bold text-slate-700 mb-1 text-center leading-tight">Bidon Ücreti (₺)</label>
+                        <div className="bg-white/80 border-slate-200 backdrop-blur-sm p-4 rounded-2xl border-2 shadow-lg text-center">
+                          <div className="text-4xl font-black text-slate-800">{seciliIslem.bidon_ucreti}</div>
+                        </div>
+                      </div>
+                      <div>
+                        <label className="flex items-center justify-center min-h-[3.5rem] text-lg font-bold text-slate-700 mb-1 text-center leading-tight">Sıkım Bedeli (₺)</label>
+                        <div className="bg-white/80 border-slate-200 backdrop-blur-sm p-4 rounded-2xl border-2 shadow-lg text-center">
+                          <div className="text-4xl font-black text-slate-800">{seciliIslem.sikim_bedeli}</div>
+                        </div>
+                      </div>
+                    </div>
+                    <div className="grid grid-cols-3 gap-4">
+                      <div>
+                        <label className="flex items-center justify-center min-h-[3.5rem] text-lg font-bold text-slate-700 mb-1 text-center leading-tight">Gelen Zeytin (KG)</label>
+                        <div className="bg-white/80 border-slate-200 backdrop-blur-sm p-4 rounded-2xl border-2 shadow-lg text-center">
+                          <div className="text-4xl font-black text-slate-800">{seciliIslem.zeytin_kg}</div>
+                        </div>
+                      </div>
+                      <div>
+                        <label className="flex items-center justify-center min-h-[3.5rem] text-lg font-bold text-slate-700 mb-1 text-center leading-tight">Sıkma Ücreti (₺)</label>
+                        <div className="bg-gradient-to-br from-blue-50 to-blue-100/50 border-blue-300 backdrop-blur-sm p-4 rounded-2xl border-2 shadow-lg text-center">
+                          <div className="text-4xl font-black text-blue-900">{yuvarla(yeniDetay.sikmaUcretiTL)}</div>
+                        </div>
+                      </div>
+                      <div>
+                        <label className="flex items-center justify-center min-h-[3.5rem] text-lg font-bold text-slate-700 mb-1 text-center leading-tight">Sıkma Ücreti (Yağ KG)</label>
+                        <div className="bg-gradient-to-br from-blue-50 to-blue-100/50 border-blue-300 backdrop-blur-sm p-4 rounded-2xl border-2 shadow-lg text-center">
+                          <div className="text-4xl font-black text-blue-900">{yuvarla(yeniDetay.sikmaUcretiYag)}</div>
+                        </div>
+                      </div>
+                    </div>
+                    <div className="grid grid-cols-3 gap-4">
+                      <div>
+                        <label className="flex items-center justify-center min-h-[3.5rem] text-lg font-bold text-slate-700 mb-1 text-center leading-tight">Kantarda Gözüken Yağ (KG)</label>
+                        <div className="bg-white/80 border-slate-200 backdrop-blur-sm p-4 rounded-2xl border-2 shadow-lg text-center">
+                          <div className="text-4xl font-black text-slate-800">{seciliIslem.cikan_yag}</div>
+                        </div>
+                      </div>
+                      <div>
+                        <label className="flex items-center justify-center min-h-[3.5rem] text-lg font-bold text-slate-700 mb-1 text-center leading-tight">Kantardaki Bidon</label>
+                        <div className="bg-white/80 border-slate-200 backdrop-blur-sm p-4 rounded-2xl border-2 shadow-lg text-center">
+                          <div className="text-4xl font-black text-slate-800">{seciliIslem.kantar_bidon ?? "—"}</div>
+                        </div>
+                      </div>
+                      <div>
+                        <label className="flex items-center justify-center min-h-[3.5rem] text-lg font-bold text-slate-700 mb-1 text-center leading-tight">Net Yağ (KG)</label>
+                        <div className="bg-gradient-to-br from-blue-50 to-blue-100/50 border-blue-300 backdrop-blur-sm p-4 rounded-2xl border-2 shadow-lg text-center">
+                          <div className="text-4xl font-black text-blue-900">{yuvarla(yeniDetay.netYag)}</div>
+                        </div>
+                      </div>
+                    </div>
+                    <div className="grid grid-cols-2 gap-4">
+                      <div>
+                        <label className="flex items-center justify-center min-h-[3.5rem] text-lg font-bold text-slate-700 mb-1 text-center leading-tight">Bidon Bedeli (₺)</label>
+                        <div className="bg-gradient-to-br from-blue-50 to-blue-100/50 border-blue-300 backdrop-blur-sm p-4 rounded-2xl border-2 shadow-lg text-center">
+                          <div className="text-4xl font-black text-blue-900">{yuvarla(yeniDetay.bidonBedeliTL)}</div>
+                        </div>
+                      </div>
+                      <div>
+                        <label className="flex items-center justify-center min-h-[3.5rem] text-lg font-bold text-slate-700 mb-1 text-center leading-tight">Bidon Bedeli (Yağ KG)</label>
+                        <div className="bg-gradient-to-br from-blue-50 to-blue-100/50 border-blue-300 backdrop-blur-sm p-4 rounded-2xl border-2 shadow-lg text-center">
+                          <div className="text-4xl font-black text-blue-900">{yuvarla(yeniDetay.bidonBedeliYag)}</div>
+                        </div>
+                      </div>
+                    </div>
+                  <div className="grid grid-cols-3 gap-4">
+                      <div>
+                        <label className="flex items-center justify-center min-h-[3.5rem] text-lg font-bold text-slate-700 mb-1 text-center leading-tight">Oran</label>
+                        <div className="bg-gradient-to-br from-blue-50 to-blue-100/50 border-blue-300 backdrop-blur-sm p-4 rounded-2xl border-2 shadow-lg text-center">
+                          <div className="text-4xl font-black text-blue-900">{yeniDetay.oran}</div>
+                        </div>
+                      </div>
+                      <div>
+                        <label className="flex items-center justify-center min-h-[3.5rem] text-lg font-bold text-slate-700 mb-1 text-center leading-tight">Toplam Sıkım Bedeli (₺)</label>
+                        <div className={`relative p-4 rounded-2xl border-2 shadow-lg text-center ${seciliIslem.odeme_tipi === "para" ? "border-red-500 bg-gradient-to-br from-red-50 to-red-100/50" : "border-slate-200 bg-white/60 opacity-30"}`}>
+                          <span className={`absolute top-2 right-2 w-5 h-5 rounded-full border-2 flex items-center justify-center ${seciliIslem.odeme_tipi === "para" ? "border-red-600" : "border-slate-400"}`}>
+                            {seciliIslem.odeme_tipi === "para" && <span className="w-2.5 h-2.5 rounded-full bg-red-600" />}
+                          </span>
+                          <div className="text-4xl font-black text-red-700">{yuvarla(yeniDetay.toplamTL)}</div>
+                        </div>
+                      </div>
+                      <div>
+                        <label className="flex items-center justify-center min-h-[3.5rem] text-lg font-bold text-slate-700 mb-1 text-center leading-tight">Toplam Sıkım Bedeli (Yağ KG)</label>
+                        <div className={`relative p-4 rounded-2xl border-2 shadow-lg text-center ${seciliIslem.odeme_tipi === "yag" ? "border-blue-500 bg-gradient-to-br from-blue-50 to-blue-100/50" : "border-slate-200 bg-white/60 opacity-30"}`}>
+                          <span className={`absolute top-2 right-2 w-5 h-5 rounded-full border-2 flex items-center justify-center ${seciliIslem.odeme_tipi === "yag" ? "border-blue-600" : "border-slate-400"}`}>
+                            {seciliIslem.odeme_tipi === "yag" && <span className="w-2.5 h-2.5 rounded-full bg-blue-600" />}
+                          </span>
+                          <div className="text-4xl font-black text-blue-700">{yuvarla(yeniDetay.toplamYag)}</div>
+                        </div>
+                      </div>
+                  </div>
+
+                  <div className="p-8 bg-gradient-to-br from-white to-slate-50 border-2 border-slate-200 rounded-3xl shadow-2xl backdrop-blur-sm">
+                    <div className="grid grid-cols-2 gap-6 text-center divide-x-2 divide-slate-100">
+                      <div className="flex flex-col justify-center">
+                        <p className="text-xs font-bold text-slate-400 uppercase tracking-wider mb-2">KALAN YAĞ</p>
+                        <div className="flex items-baseline justify-center gap-1">
+                          <p className="text-5xl font-black text-slate-800">{hazir?.kalanYag}</p>
+                          <p className="text-sm font-bold text-slate-400">KG</p>
+                        </div>
+                      </div>
+                      <div className="flex flex-col justify-center">
+                        <p className="text-xs font-bold text-slate-400 uppercase tracking-wider mb-2">VERİLEN TOPLAM BİDON</p>
+                        <div className="flex items-baseline justify-center">
+                          <span className="text-5xl font-black text-slate-800">{bidonOzetAyniTelefon?.genelToplam ?? 0}</span>
+                          <span className="text-sm font-bold text-slate-400 ml-1.5">ADET</span>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                </>
               ) : (
                 <>
                   <div className="grid grid-cols-2 gap-4">
@@ -1477,6 +1756,39 @@ export default function CikisciPanel({ defaultSettings }) {
                     </span>
                   </div>
                 )}
+              </div>
+
+              <div className="space-y-2">
+                <div className="flex items-end justify-between gap-3">
+                  <label className="block text-md font-bold text-slate-700">Not</label>
+                  {notEdit !== (seciliIslem.notlar || "") && (
+                    <div className="flex items-center gap-2">
+                      <button
+                        type="button"
+                        onClick={() => setNotEdit(seciliIslem.notlar || "")}
+                        className="px-3 py-2 rounded-xl text-sm font-bold text-white bg-rose-600 hover:bg-rose-700 border border-rose-700 transition-colors shadow-md"
+                      >
+                        Vazgeç
+                      </button>
+                      <button
+                        type="button"
+                        onClick={handleNotKaydet}
+                        disabled={notSaving}
+                        className={`px-4 py-2 rounded-xl text-sm font-black border-2 transition-all bg-emerald-600 text-white border-emerald-700 hover:bg-emerald-700 shadow-md ${notSaving ? "opacity-80 cursor-not-allowed" : ""}`}
+                      >
+                        {notSaving ? "Kaydediliyor..." : "Kaydet"}
+                      </button>
+                    </div>
+                  )}
+                </div>
+                <textarea
+                  value={notEdit}
+                  onChange={(e) => setNotEdit(e.target.value)}
+                  rows={3}
+                  maxLength={1000}
+                  placeholder="Bu kayıt için not ekleyin..."
+                  className="w-full px-5 py-4 bg-white/80 backdrop-blur-sm border-2 border-slate-200 focus:border-emerald-400 focus:outline-none rounded-2xl text-lg font-semibold text-slate-800 shadow-lg resize-none"
+                />
               </div>
 
 
