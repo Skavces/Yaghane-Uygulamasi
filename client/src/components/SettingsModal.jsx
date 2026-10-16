@@ -4,7 +4,9 @@ import axios from "axios"
 export default function SettingsModal({ onClose, onSave }) {
   const [formData, setFormData] = useState({
     yag_fiyati: "",
-    hak_oran: "",
+    yag_ile_odeme: "",
+    bidon_ucreti: "",
+    sikim_bedeli: "",
   })
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState("")
@@ -18,7 +20,9 @@ export default function SettingsModal({ onClose, onSave }) {
       const res = await axios.get("/api/settings")
       setFormData({
         yag_fiyati: res.data.yag_fiyati,
-        hak_oran: res.data.hak_oran,
+        yag_ile_odeme: res.data.yag_ile_odeme,
+        bidon_ucreti: res.data.bidon_ucreti,
+        sikim_bedeli: res.data.sikim_bedeli,
       })
     } catch {
       setError("Ayarlar yüklenemedi.")
@@ -42,7 +46,7 @@ export default function SettingsModal({ onClose, onSave }) {
 
   return (
     <div className="fixed inset-0 z-[60] bg-black/50 backdrop-blur-sm flex items-center justify-center p-4">
-      <div className="bg-white/90 backdrop-blur-xl rounded-3xl shadow-2xl w-full max-w-sm overflow-hidden border-2 border-white/60">
+      <div className="bg-white/90 backdrop-blur-xl rounded-3xl shadow-2xl w-full max-w-sm max-h-[90vh] overflow-y-auto border-2 border-white/60">
         <div className="bg-gradient-to-r from-slate-100 to-slate-200 p-6 border-b-2 border-slate-200 flex justify-between items-center">
           <h2 className="text-xl font-black text-slate-800">Ayarlar</h2>
           <button
@@ -72,14 +76,43 @@ export default function SettingsModal({ onClose, onSave }) {
             />
           </div>
 
+          <div className="pt-4 border-t-2 border-slate-100">
+            <h3 className="text-base font-black text-slate-800">Yağhane Varsayılanları</h3>
+            <p className="text-sm text-slate-500 font-medium">Yağhane formunda başlangıç değeri olarak gelir.</p>
+          </div>
+
           <div>
             <label className="block text-sm font-bold text-slate-700 mb-2">
-              Hak Oranı (%)
+              Yağ ile Ödeme Bedeli (₺)
             </label>
             <input
               type="number"
-              value={formData.hak_oran}
-              onChange={(e) => setFormData({...formData, hak_oran: e.target.value})}
+              value={formData.yag_ile_odeme}
+              onChange={(e) => setFormData({...formData, yag_ile_odeme: e.target.value})}
+              className="w-full px-4 py-3 bg-white border-2 border-slate-200 rounded-2xl text-lg font-bold text-slate-800 focus:outline-none focus:border-emerald-400 transition-all shadow-sm"
+            />
+          </div>
+
+          <div>
+            <label className="block text-sm font-bold text-slate-700 mb-2">
+              Bidon Ücreti (₺)
+            </label>
+            <input
+              type="number"
+              value={formData.bidon_ucreti}
+              onChange={(e) => setFormData({...formData, bidon_ucreti: e.target.value})}
+              className="w-full px-4 py-3 bg-white border-2 border-slate-200 rounded-2xl text-lg font-bold text-slate-800 focus:outline-none focus:border-emerald-400 transition-all shadow-sm"
+            />
+          </div>
+
+          <div>
+            <label className="block text-sm font-bold text-slate-700 mb-2">
+              Sıkım Bedeli (₺)
+            </label>
+            <input
+              type="number"
+              value={formData.sikim_bedeli}
+              onChange={(e) => setFormData({...formData, sikim_bedeli: e.target.value})}
               className="w-full px-4 py-3 bg-white border-2 border-slate-200 rounded-2xl text-lg font-bold text-slate-800 focus:outline-none focus:border-emerald-400 transition-all shadow-sm"
             />
           </div>
