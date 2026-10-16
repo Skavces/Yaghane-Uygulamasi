@@ -3,6 +3,7 @@ import axios from "axios"
 import io from "socket.io-client"
 import { ClipboardList, ListChecks, MoreVertical, Pencil, RefreshCw, Undo2, X } from "lucide-react"
 import TarihSaat from "./TarihSaat"
+import Telefon from "./Telefon"
 
 axios.defaults.baseURL = "/"
 
@@ -626,9 +627,7 @@ export default function GirisciPanel() {
                                 <td className="px-5 py-3 whitespace-nowrap">
                                   <div className="flex flex-col">
                                     <span className="font-semibold text-murekkep">{kayit.ad_soyad}</span>
-                                    <span className="readout text-sm text-murekkep/60">
-                                      {kayit.telefon ? formatTelefonTR(kayit.telefon) : "-"}
-                                    </span>
+                                    <Telefon numara={kayit.telefon ? formatTelefonTR(kayit.telefon) : "-"} />
                                   </div>
                                 </td>
 

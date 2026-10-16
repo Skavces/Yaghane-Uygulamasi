@@ -6,6 +6,7 @@ import * as XLSX from "xlsx-js-style"
 import { saveAs } from "file-saver"
 import { Check, Download, X } from "lucide-react"
 import TarihSaat from "./TarihSaat"
+import Telefon from "./Telefon"
 
 axios.defaults.baseURL = "/"
 const socket = io()
@@ -1220,9 +1221,7 @@ export default function CikisciPanel({ defaultSettings }) {
                       <span className="rozet bg-para/10 text-para border-para/30">PARA</span>
                     )}
                   </div>
-                  <p className="readout text-sm text-murekkep/60">
-                    {normalizeTelefon(islem.telefon)}
-                  </p>
+                  <Telefon numara={normalizeTelefon(islem.telefon)} />
                   <TarihSaat
                     className="mt-1.5"
                     tarih={new Date(islem.created_at).toLocaleDateString("tr-TR", { day: "2-digit", month: "2-digit", year: "numeric" })}
@@ -1341,7 +1340,7 @@ export default function CikisciPanel({ defaultSettings }) {
                             {item.ad_soyad.split(" / ").map((name, i) => (
                               <h4 key={i} className="font-semibold text-xl text-murekkep leading-tight">{name}</h4>
                             ))}
-                            <p className="readout text-murekkep/60 mt-1">{item.telefon}</p>
+                            <Telefon numara={item.telefon} className="mt-1" />
                           </div>
 
                           <div className="flex gap-8 text-center self-center">
@@ -1385,7 +1384,7 @@ export default function CikisciPanel({ defaultSettings }) {
                     )}
                     <div>
                       <h3 className="font-display text-xl font-bold text-murekkep">{seciliIslem.ad_soyad}</h3>
-                      <p className="readout text-murekkep/60">{normalizeTelefon(seciliIslem.telefon)}</p>
+                      <Telefon numara={normalizeTelefon(seciliIslem.telefon)} />
                     </div>
                   </div>
                   <div className="text-right">

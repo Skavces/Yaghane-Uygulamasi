@@ -2,6 +2,7 @@ import { useEffect, useMemo, useRef, useState, useCallback } from "react"
 import axios from "axios"
 import { CheckCircle2, RefreshCw, X } from "lucide-react"
 import TarihSaat from "./TarihSaat"
+import Telefon from "./Telefon"
 import { hesaplaYagciPaneli } from "../utils/yagHesap"
 
 axios.defaults.baseURL = "/"
@@ -374,9 +375,7 @@ export default function YagciPanel({ defaultSettings }) {
                           <span className="rozet bg-para/10 text-para border-para/30">PARA</span>
                         )}
                       </div>
-                      <p className="readout text-sm text-murekkep/60">
-                        {m.telefon ? normalizeTelefon(m.telefon) : "-"}
-                      </p>
+                      <Telefon numara={m.telefon ? normalizeTelefon(m.telefon) : "-"} />
                       <TarihSaat
                         className="mt-1.5"
                         tarih={new Date(m.created_at).toLocaleDateString("tr-TR", { day: "2-digit", month: "2-digit", year: "numeric" })}
@@ -404,9 +403,7 @@ export default function YagciPanel({ defaultSettings }) {
                     <h3 className="font-display text-xl font-bold text-murekkep">
                       {secili.ad_soyad}
                     </h3>
-                    <p className="readout text-murekkep/60">
-                      {secili.telefon ? normalizeTelefon(secili.telefon) : "-"}
-                    </p>
+                    <Telefon numara={secili.telefon ? normalizeTelefon(secili.telefon) : "-"} />
                   </div>
                   <span className="fis-no text-2xl px-3 py-1">No {secili.musteri_no}</span>
                 </div>
