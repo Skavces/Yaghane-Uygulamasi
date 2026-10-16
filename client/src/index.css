@@ -3,6 +3,9 @@
 @tailwind utilities;
 
 @layer base {
+  html {
+    font-size: 125%;
+  }
   body {
     @apply bg-zemin text-murekkep font-sans antialiased;
   }

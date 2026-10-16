@@ -246,7 +246,7 @@ export default function GirisciPanel() {
       {acikMenu && (
         <div
           ref={menuRef}
-          className="card fixed z-[9999] shadow-lg w-40 py-1"
+          className="card fixed z-[9999] shadow-lg w-40 py-1 -translate-x-full"
           style={{ top: menuPos.top, left: menuPos.left }}
         >
           {kayitlar.filter(k => k.id === acikMenu).map(kayit => (
@@ -404,7 +404,7 @@ export default function GirisciPanel() {
             </button>
           </div>
 
-          <div className="p-6 min-h-[500px]">
+          <div className="p-6 min-h-[25rem]">
             {activeTab === "form" && (
               <div className="max-w-lg mx-auto">
                 <form onSubmit={handleSubmit} className="space-y-6">
@@ -679,7 +679,7 @@ export default function GirisciPanel() {
                                         setAcikMenu(null)
                                       } else {
                                         const rect = e.currentTarget.getBoundingClientRect()
-                                        setMenuPos({ top: rect.bottom + 4, left: rect.right - 160 })
+                                        setMenuPos({ top: rect.bottom + 4, left: rect.right })
                                         setAcikMenu(kayit.id)
                                       }
                                     }}
