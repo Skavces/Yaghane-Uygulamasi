@@ -41,13 +41,14 @@ export default function SettingsModal({ onClose, onSave }) {
   }
 
   return (
-    <div className="fixed inset-0 z-[60] bg-black/50 backdrop-blur-sm flex items-center justify-center p-4">
-      <div className="bg-white/90 backdrop-blur-xl rounded-3xl shadow-2xl w-full max-w-sm overflow-hidden border-2 border-white/60">
-        <div className="bg-gradient-to-r from-slate-100 to-slate-200 p-6 border-b-2 border-slate-200 flex justify-between items-center">
-          <h2 className="text-xl font-black text-slate-800">Ayarlar</h2>
+    <div className="fixed inset-0 z-[60] bg-murekkep/60 flex items-center justify-center p-4">
+      <div className="bg-white rounded-md shadow-lg w-full max-w-sm overflow-hidden border border-cizgi">
+        <div className="px-6 py-4 border-b border-cizgi flex justify-between items-center">
+          <h2 className="font-display text-lg font-bold text-murekkep">Ayarlar</h2>
           <button
             onClick={onClose}
-            className="text-slate-400 hover:text-red-500 text-2xl font-bold transition-colors"
+            aria-label="Kapat"
+            className="text-murekkep/50 hover:text-murekkep text-2xl leading-none transition-colors"
           >
             ×
           </button>
@@ -55,40 +56,32 @@ export default function SettingsModal({ onClose, onSave }) {
 
         <form onSubmit={handleSave} className="p-6 space-y-4">
           {error && (
-             <div className="p-3 bg-red-50 text-red-700 text-sm font-bold rounded-xl border border-red-200">
+             <div className="p-3 bg-red-50 text-red-700 text-sm font-semibold rounded border border-red-200">
                {error}
              </div>
           )}
 
           <div>
-            <label className="block text-sm font-bold text-slate-700 mb-2">
-              Yağ Fiyatı (₺)
-            </label>
+            <label className="label">Yağ fiyatı (₺)</label>
             <input
               type="number"
               value={formData.yag_fiyati}
               onChange={(e) => setFormData({...formData, yag_fiyati: e.target.value})}
-              className="w-full px-4 py-3 bg-white border-2 border-slate-200 rounded-2xl text-lg font-bold text-slate-800 focus:outline-none focus:border-emerald-400 transition-all shadow-sm"
+              className="input readout text-lg"
             />
           </div>
 
           <div>
-            <label className="block text-sm font-bold text-slate-700 mb-2">
-              Hak Oranı (%)
-            </label>
+            <label className="label">Hak oranı (%)</label>
             <input
               type="number"
               value={formData.hak_oran}
               onChange={(e) => setFormData({...formData, hak_oran: e.target.value})}
-              className="w-full px-4 py-3 bg-white border-2 border-slate-200 rounded-2xl text-lg font-bold text-slate-800 focus:outline-none focus:border-emerald-400 transition-all shadow-sm"
+              className="input readout text-lg"
             />
           </div>
 
-          <button
-            type="submit"
-            disabled={loading}
-            className="w-full py-3 bg-gradient-to-r from-emerald-500 to-emerald-600 hover:from-emerald-600 hover:to-emerald-700 text-white font-bold rounded-2xl shadow-lg transition-all"
-          >
+          <button type="submit" disabled={loading} className="btn-primary w-full">
             {loading ? "Kaydediliyor..." : "Kaydet"}
           </button>
         </form>
