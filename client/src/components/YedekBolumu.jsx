@@ -1,17 +1,36 @@
 import { useState, useEffect, useRef } from "react"
 import axios from "axios"
-import { FolderOpen, RotateCcw, Upload } from "lucide-react"
+import { FolderOpen, RotateCcw, Upload, X } from "lucide-react"
 
 const ONAY_YAZISI = "GERİ YÜKLE"
 
-const tarihYaz = (ms) =>
-  new Date(ms).toLocaleString("tr-TR", { dateStyle: "short", timeStyle: "short" })
+const SAYFA = 20
+const BOS_FILTRE = { baslangic: "", bitis: "", tur: "" }
+
+const TUR_ROZET = {
+  otomatik: { ad: "Günlük", sinif: "bg-zeytin/10 text-zeytin" },
+  elle: { ad: "Elle", sinif: "bg-sizma/10 text-sizma" },
+  oncesi: { ad: "Öncesi", sinif: "bg-para/10 text-para" },
+}
+
+// "2026-10-17" + "190900" -> "17.10.2026 19:09" (otomatik yedeklerde saat yok)
+const yedekTarihYaz = (gun, saat) => {
+  const [y, a, g] = gun.split("-")
+  return saat ? `${g}.${a}.${y} ${saat.slice(0, 2)}:${saat.slice(2, 4)}` : `${g}.${a}.${y}`
+}
+
+const gunStr = (d) => d.toLocaleDateString("sv-SE")
+
+const filtreParams = (f) => Object.fromEntries(Object.entries(f).filter(([, v]) => v))
 
 const boyutYaz = (b) => (b >= 1024 * 1024 ? `${(b / 1024 / 1024).toFixed(1)} MB` : `${Math.max(1, Math.round(b / 1024))} KB`)
 
 export default function YedekBolumu() {
   const [klasor, setKlasor] = useState("")
   const [yedekler, setYedekler] = useState([])
+  const [toplam, setToplam] = useState(0)
+  const [filtre, setFiltre] = useState(BOS_FILTRE)
+  const [yenile, setYenile] = useState(0)
   const [mesaj, setMesaj] = useState(null)
   const [mesgul, setMesgul] = useState(false)
   const [onay, setOnay] = useState(null)
@@ -19,19 +38,46 @@ export default function YedekBolumu() {
   const [pencereAcik, setPencereAcik] = useState(false)
   const dosyaRef = useRef(null)
 
-  const yukle = async () => {
+  // Filtre değişince ya da bir işlem bitince liste ilk sayfadan yeniden yüklenir.
+  useEffect(() => {
+    let iptal = false
+    axios
+      .get("/api/yedek", { params: { ...filtreParams(filtre), limit: SAYFA } })
+      .then((res) => {
+        if (iptal) return
+        setKlasor(res.data.klasor)
+        setYedekler(res.data.yedekler)
+        setToplam(res.data.toplam)
+      })
+      .catch((err) => {
+        if (!iptal) setMesaj({ hata: true, metin: err.response?.data?.msg || "Yedek bilgisi alınamadı." })
+      })
+    return () => {
+      iptal = true
+    }
+  }, [filtre, yenile])
+
+  const dahaFazla = async () => {
     try {
-      const res = await axios.get("/api/yedek")
-      setKlasor(res.data.klasor)
-      setYedekler(res.data.yedekler)
-    } catch {
-      setMesaj({ hata: true, metin: "Yedek bilgisi alınamadı." })
+      const res = await axios.get("/api/yedek", {
+        params: { ...filtreParams(filtre), limit: SAYFA, offset: yedekler.length },
+      })
+      setYedekler((onceki) => [...onceki, ...res.data.yedekler])
+      setToplam(res.data.toplam)
+    } catch (err) {
+      setMesaj({ hata: true, metin: err.response?.data?.msg || "Yedek bilgisi alınamadı." })
     }
   }
 
-  useEffect(() => {
-    yukle()
-  }, [])
+  const hizliTarih = (gunSayisi) => {
+    const bugun = new Date()
+    const bas = new Date()
+    if (gunSayisi === "ay") bas.setDate(1)
+    else bas.setDate(bugun.getDate() - (gunSayisi - 1))
+    setFiltre((f) => ({ ...f, baslangic: gunStr(bas), bitis: gunStr(bugun) }))
+  }
+
+  const filtreVar = Object.values(filtre).some(Boolean)
 
   const calistir = async (islem, basari) => {
     setMesgul(true)
@@ -39,7 +85,7 @@ export default function YedekBolumu() {
     try {
       const res = await islem()
       setMesaj({ hata: false, metin: basari || res.data.msg })
-      await yukle()
+      setYenile((n) => n + 1)
     } catch (err) {
       setMesaj({ hata: true, metin: err.response?.data?.msg || "İşlem başarısız." })
     } finally {
@@ -166,16 +212,83 @@ export default function YedekBolumu() {
         </div>
       )}
 
-      <div>
-        <label className="label">Yedekler</label>
+      <div className="space-y-2">
+        <label className="label">Yedekler ({toplam})</label>
+
+        <div className="grid grid-cols-2 gap-2">
+          <input
+            type="date"
+            value={filtre.baslangic}
+            max={filtre.bitis || undefined}
+            onChange={(e) => setFiltre({ ...filtre, baslangic: e.target.value })}
+            className="input text-sm py-1.5"
+            aria-label="Başlangıç tarihi"
+          />
+          <input
+            type="date"
+            value={filtre.bitis}
+            min={filtre.baslangic || undefined}
+            onChange={(e) => setFiltre({ ...filtre, bitis: e.target.value })}
+            className="input text-sm py-1.5"
+            aria-label="Bitiş tarihi"
+          />
+        </div>
+
+        <div className="flex gap-2">
+          <select
+            value={filtre.tur}
+            onChange={(e) => setFiltre({ ...filtre, tur: e.target.value })}
+            className="input text-sm py-1.5"
+            aria-label="Yedek türü"
+          >
+            <option value="">Tüm türler</option>
+            <option value="otomatik">Günlük</option>
+            <option value="elle">Elle</option>
+            <option value="oncesi">Geri yükleme öncesi</option>
+          </select>
+          {filtreVar && (
+            <button
+              type="button"
+              onClick={() => setFiltre(BOS_FILTRE)}
+              className="btn-secondary py-1.5 px-3 shrink-0 text-sm"
+            >
+              <X className="w-4 h-4" /> Temizle
+            </button>
+          )}
+        </div>
+
+        <div className="flex flex-wrap gap-1.5">
+          {[
+            ["Bugün", 1],
+            ["Son 7 gün", 7],
+            ["Bu ay", "ay"],
+          ].map(([ad, gun]) => (
+            <button
+              key={ad}
+              type="button"
+              onClick={() => hizliTarih(gun)}
+              className="text-xs px-2 py-1 rounded border border-cizgi bg-white text-murekkep/70 hover:text-murekkep"
+            >
+              {ad}
+            </button>
+          ))}
+        </div>
+
         {yedekler.length === 0 ? (
-          <p className="text-sm text-murekkep/60">Bu klasörde henüz yedek yok.</p>
+          <p className="text-sm text-murekkep/60">
+            {filtreVar ? "Bu tarihlerde yedek yok." : "Bu klasörde henüz yedek yok."}
+          </p>
         ) : (
           <ul className="max-h-64 overflow-y-auto border border-cizgi rounded divide-y divide-cizgi">
             {yedekler.map((y) => (
               <li key={y.ad} className="flex items-center justify-between gap-2 px-3 py-2">
                 <div className="min-w-0">
-                  <p className="readout text-sm text-murekkep">{tarihYaz(y.tarih)}</p>
+                  <p className="readout text-sm text-murekkep flex items-center gap-2">
+                    {yedekTarihYaz(y.gun, y.saat)}
+                    <span className={`text-[11px] font-semibold px-1.5 py-0.5 rounded ${TUR_ROZET[y.tur].sinif}`}>
+                      {TUR_ROZET[y.tur].ad}
+                    </span>
+                  </p>
                   <p className="text-xs text-murekkep/60 truncate">
                     {y.ad} · {boyutYaz(y.boyut)}
                   </p>
@@ -191,6 +304,12 @@ export default function YedekBolumu() {
               </li>
             ))}
           </ul>
+        )}
+
+        {yedekler.length < toplam && (
+          <button type="button" onClick={dahaFazla} className="btn-secondary w-full py-1.5 text-sm">
+            Daha fazla göster (kalan {toplam - yedekler.length})
+          </button>
         )}
       </div>
     </div>
