@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useRef, useState, useCallback } from "react"
 import axios from "axios"
-import { CheckCircle2, RefreshCw, X } from "lucide-react"
+import { CheckCircle2, RefreshCw, Search, X } from "lucide-react"
 import TarihSaat from "./TarihSaat"
 import Telefon from "./Telefon"
 import { hesaplaYagciPaneli } from "../utils/yagHesap"
@@ -313,7 +313,7 @@ export default function YagciPanel({ defaultSettings }) {
             <div className="mb-4">
               <label className="label">Müşteri no ile ara</label>
 
-              <div className="flex gap-2">
+              <div className="relative">
                 <input
                   value={musteriNoAra}
                   onChange={(e) =>
@@ -323,18 +323,21 @@ export default function YagciPanel({ defaultSettings }) {
                   }
                   placeholder="000"
                   inputMode="numeric"
-                  className="input readout"
+                  className="peer input readout pr-10"
                 />
 
-                <button
-                  type="button"
-                  onClick={() => setMusteriNoAra("")}
-                  className="btn-secondary px-3"
-                  title="Temizle"
-                  aria-label="Temizle"
-                >
-                  <X className="w-4 h-4" />
-                </button>
+                {musteriNoAra ? (
+                  <button
+                    type="button"
+                    onClick={() => setMusteriNoAra("")}
+                    className="absolute right-3 top-1/2 -translate-y-1/2 text-murekkep/40 hover:text-murekkep"
+                    aria-label="Temizle"
+                  >
+                    <X className="w-4 h-4" />
+                  </button>
+                ) : (
+                  <Search className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-murekkep/40 peer-focus:text-zeytin transition-colors pointer-events-none" />
+                )}
               </div>
 
               {!!musteriNoAra && (
