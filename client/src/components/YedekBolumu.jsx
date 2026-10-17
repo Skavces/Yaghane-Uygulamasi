@@ -1,7 +1,6 @@
 import { useState, useEffect, useRef } from "react"
 import axios from "axios"
 import { FolderOpen, RotateCcw, Upload } from "lucide-react"
-import KlasorSecici from "./KlasorSecici"
 
 const ONAY_YAZISI = "GERİ YÜKLE"
 
@@ -17,7 +16,7 @@ export default function YedekBolumu() {
   const [mesgul, setMesgul] = useState(false)
   const [onay, setOnay] = useState(null)
   const [onayYazi, setOnayYazi] = useState("")
-  const [seciciAcik, setSeciciAcik] = useState(false)
+  const [pencereAcik, setPencereAcik] = useState(false)
   const dosyaRef = useRef(null)
 
   const yukle = async () => {
@@ -48,9 +47,17 @@ export default function YedekBolumu() {
     }
   }
 
-  const klasorSec = async (yol) => {
-    setSeciciAcik(false)
-    await calistir(() => axios.put("/api/yedek/klasor", { klasor: yol }))
+  const klasorSec = async () => {
+    setPencereAcik(true)
+    setMesaj(null)
+    try {
+      const res = await axios.post("/api/yedek/klasor-sec")
+      if (res.data.yol) await calistir(() => axios.put("/api/yedek/klasor", { klasor: res.data.yol }))
+    } catch (err) {
+      setMesaj({ hata: true, metin: err.response?.data?.msg || "Klasör seçilemedi." })
+    } finally {
+      setPencereAcik(false)
+    }
   }
   const simdiYedekAl = () => calistir(() => axios.post("/api/yedek/simdi"))
 
@@ -104,18 +111,13 @@ export default function YedekBolumu() {
           <input value={klasor} readOnly className="input readout text-sm" />
           <button
             type="button"
-            onClick={() => setSeciciAcik(true)}
-            disabled={mesgul || seciciAcik}
+            onClick={klasorSec}
+            disabled={mesgul || pencereAcik}
             className="btn-secondary shrink-0"
           >
-            <FolderOpen className="w-4 h-4" /> Klasör seç
+            <FolderOpen className="w-4 h-4" /> {pencereAcik ? "Pencere açık..." : "Klasör seç"}
           </button>
         </div>
-        {seciciAcik && (
-          <div className="mt-2">
-            <KlasorSecici onSec={klasorSec} onVazgec={() => setSeciciAcik(false)} />
-          </div>
-        )}
       </div>
 
       <div className="flex gap-2">

@@ -6,6 +6,7 @@ const cors = require("cors")
 const path = require("path")
 const fs = require("fs")
 const os = require("os")
+const { execFile } = require("child_process")
 
 const app = express()
 const server = http.createServer(app)
@@ -820,90 +821,61 @@ app.post(
   }
 )
 
-// Klasör seçici: tarayıcı gerçek klasör yolunu veremediği için klasörleri sunucu listeler.
-// Yalnızca klasör adları döner, dosya içeriği okunmaz.
-const WINDOWS = process.platform === "win32"
+// Klasör seçme penceresi: tarayıcı seçilen klasörün gerçek yolunu veremediği için pencereyi
+// sunucu açar (sunucu ve tarayıcı aynı bilgisayardaysa kullanıcı kendi ekranında görür).
+const WINDOWS_KLASOR_SEC = `
+[Console]::OutputEncoding = [System.Text.Encoding]::UTF8
+Add-Type -AssemblyName System.Windows.Forms
+$sahip = New-Object System.Windows.Forms.Form
+$sahip.TopMost = $true
+$d = New-Object System.Windows.Forms.FolderBrowserDialog
+$d.Description = 'Yedek klasörü seç'
+$d.ShowNewFolderButton = $true
+if ($d.ShowDialog($sahip) -eq [System.Windows.Forms.DialogResult]::OK) { Write-Output $d.SelectedPath }
+`
 
-function klasorKisayollari() {
-  const liste = [{ ad: "Ev", yol: os.homedir() }]
-  if (!WINDOWS) {
-    const kullanici = os.userInfo().username
-    liste.push({ ad: "USB / Medya", yol: path.join("/media", kullanici) })
-    liste.push({ ad: "USB / Medya", yol: path.join("/run/media", kullanici) })
-  }
-  return liste.filter((k) => fs.existsSync(k.yol))
+function pencereCalistir(komut, argumanlar) {
+  return new Promise((resolve, reject) => {
+    execFile(komut, argumanlar, { timeout: 10 * 60 * 1000, maxBuffer: 1024 * 1024 }, (err, stdout) => {
+      if (err && err.code === "ENOENT") return reject(Object.assign(new Error("yok"), { yok: true }))
+      // Vazgeçilirse zenity/kdialog 1 ile çıkar; PowerShell ise boş çıktı verir.
+      resolve(String(stdout || "").trim())
+    })
+  })
 }
 
-app.get("/api/yedek/klasor-gez", async (req, res) => {
+let klasorPenceresiAcik = false
+
+app.post("/api/yedek/klasor-sec", async (req, res) => {
+  if (klasorPenceresiAcik) return res.status(409).json({ msg: "Klasör seçme penceresi zaten açık." })
+  klasorPenceresiAcik = true
   try {
-    if (WINDOWS && req.query.kok) {
-      const suruculer = "CDEFGHIJKLMNOPQRSTUVWXYZ"
-        .split("")
-        .map((h) => `${h}:\\`)
-        .filter((s) => fs.existsSync(s))
-      return res.json({
-        yol: "",
-        ust: null,
-        klasorler: suruculer.map((s) => ({ ad: s, yol: s })),
-        kisayollar: klasorKisayollari(),
+    let yol
+    if (process.platform === "win32") {
+      yol = await pencereCalistir("powershell", ["-NoProfile", "-STA", "-Command", WINDOWS_KLASOR_SEC])
+    } else if (process.platform === "darwin") {
+      yol = await pencereCalistir("osascript", ["-e", "POSIX path of (choose folder with prompt \"Yedek klasörü seç\")"])
+    } else {
+      try {
+        yol = await pencereCalistir("zenity", ["--file-selection", "--directory", "--title=Yedek klasörü seç"])
+      } catch (err) {
+        if (!err.yok) throw err
+        yol = await pencereCalistir("kdialog", ["--getexistingdirectory", os.homedir()])
+      }
+    }
+    res.json(yol ? { yol } : { iptal: true })
+  } catch (err) {
+    if (err.yok) {
+      return res.status(501).json({
+        msg:
+          process.platform === "linux"
+            ? "Klasör seçme penceresi açılamadı (zenity veya kdialog kurulu değil)."
+            : "Klasör seçme penceresi açılamadı.",
       })
     }
-
-    let yol = String(req.query.yol || "").trim()
-    if (!yol) {
-      const kayitli = await yedekKlasoruOku()
-      yol = fs.existsSync(kayitli) ? kayitli : os.homedir()
-    }
-    if (!path.isAbsolute(yol)) return res.status(400).json({ msg: "Geçersiz klasör yolu" })
-    yol = path.resolve(yol)
-
-    let girdiler
-    try {
-      girdiler = await fs.promises.readdir(yol, { withFileTypes: true })
-    } catch {
-      return res.status(400).json({ msg: "Bu klasör açılamadı." })
-    }
-
-    const klasorler = []
-    for (const g of girdiler) {
-      if (g.name.startsWith(".")) continue
-      let klasorMu = g.isDirectory()
-      if (!klasorMu && g.isSymbolicLink()) {
-        klasorMu = await fs.promises.stat(path.join(yol, g.name)).then((s) => s.isDirectory(), () => false)
-      }
-      if (klasorMu) klasorler.push({ ad: g.name, yol: path.join(yol, g.name) })
-    }
-    klasorler.sort((a, b) => a.ad.localeCompare(b.ad, "tr"))
-
-    const ustYol = path.dirname(yol)
-    res.json({
-      yol,
-      ust: ustYol !== yol ? ustYol : WINDOWS ? "" : null,
-      klasorler,
-      kisayollar: klasorKisayollari(),
-    })
-  } catch (err) {
     hataYanit(res, err)
-  }
-})
-
-app.post("/api/yedek/klasor-olustur", async (req, res) => {
-  try {
-    const ust = String(req.body.ust || "")
-    const ad = String(req.body.ad || "").trim()
-    if (!path.isAbsolute(ust) || !fs.existsSync(ust)) return res.status(400).json({ msg: "Üst klasör bulunamadı." })
-    if (!ad || ad === "." || ad === ".." || !/^[^\\/:*?"<>|]+$/.test(ad)) {
-      return res.status(400).json({ msg: "Klasör adı geçersiz." })
-    }
-    const yol = path.join(ust, ad)
-    try {
-      await fs.promises.mkdir(yol)
-    } catch (err) {
-      return res.status(400).json({ msg: err.code === "EEXIST" ? "Bu adda bir klasör zaten var." : "Klasör oluşturulamadı." })
-    }
-    res.json({ yol })
-  } catch (err) {
-    hataYanit(res, err)
+  } finally {
+    klasorPenceresiAcik = false
   }
 })
 
