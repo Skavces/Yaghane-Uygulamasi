@@ -820,6 +820,93 @@ app.post(
   }
 )
 
+// Klasör seçici: tarayıcı gerçek klasör yolunu veremediği için klasörleri sunucu listeler.
+// Yalnızca klasör adları döner, dosya içeriği okunmaz.
+const WINDOWS = process.platform === "win32"
+
+function klasorKisayollari() {
+  const liste = [{ ad: "Ev", yol: os.homedir() }]
+  if (!WINDOWS) {
+    const kullanici = os.userInfo().username
+    liste.push({ ad: "USB / Medya", yol: path.join("/media", kullanici) })
+    liste.push({ ad: "USB / Medya", yol: path.join("/run/media", kullanici) })
+  }
+  return liste.filter((k) => fs.existsSync(k.yol))
+}
+
+app.get("/api/yedek/klasor-gez", async (req, res) => {
+  try {
+    if (WINDOWS && req.query.kok) {
+      const suruculer = "CDEFGHIJKLMNOPQRSTUVWXYZ"
+        .split("")
+        .map((h) => `${h}:\\`)
+        .filter((s) => fs.existsSync(s))
+      return res.json({
+        yol: "",
+        ust: null,
+        klasorler: suruculer.map((s) => ({ ad: s, yol: s })),
+        kisayollar: klasorKisayollari(),
+      })
+    }
+
+    let yol = String(req.query.yol || "").trim()
+    if (!yol) {
+      const kayitli = await yedekKlasoruOku()
+      yol = fs.existsSync(kayitli) ? kayitli : os.homedir()
+    }
+    if (!path.isAbsolute(yol)) return res.status(400).json({ msg: "Geçersiz klasör yolu" })
+    yol = path.resolve(yol)
+
+    let girdiler
+    try {
+      girdiler = await fs.promises.readdir(yol, { withFileTypes: true })
+    } catch {
+      return res.status(400).json({ msg: "Bu klasör açılamadı." })
+    }
+
+    const klasorler = []
+    for (const g of girdiler) {
+      if (g.name.startsWith(".")) continue
+      let klasorMu = g.isDirectory()
+      if (!klasorMu && g.isSymbolicLink()) {
+        klasorMu = await fs.promises.stat(path.join(yol, g.name)).then((s) => s.isDirectory(), () => false)
+      }
+      if (klasorMu) klasorler.push({ ad: g.name, yol: path.join(yol, g.name) })
+    }
+    klasorler.sort((a, b) => a.ad.localeCompare(b.ad, "tr"))
+
+    const ustYol = path.dirname(yol)
+    res.json({
+      yol,
+      ust: ustYol !== yol ? ustYol : WINDOWS ? "" : null,
+      klasorler,
+      kisayollar: klasorKisayollari(),
+    })
+  } catch (err) {
+    hataYanit(res, err)
+  }
+})
+
+app.post("/api/yedek/klasor-olustur", async (req, res) => {
+  try {
+    const ust = String(req.body.ust || "")
+    const ad = String(req.body.ad || "").trim()
+    if (!path.isAbsolute(ust) || !fs.existsSync(ust)) return res.status(400).json({ msg: "Üst klasör bulunamadı." })
+    if (!ad || ad === "." || ad === ".." || !/^[^\\/:*?"<>|]+$/.test(ad)) {
+      return res.status(400).json({ msg: "Klasör adı geçersiz." })
+    }
+    const yol = path.join(ust, ad)
+    try {
+      await fs.promises.mkdir(yol)
+    } catch (err) {
+      return res.status(400).json({ msg: err.code === "EEXIST" ? "Bu adda bir klasör zaten var." : "Klasör oluşturulamadı." })
+    }
+    res.json({ yol })
+  } catch (err) {
+    hataYanit(res, err)
+  }
+})
+
 setTimeout(gunlukYedekKontrol, 2000)
 setInterval(gunlukYedekKontrol, 60 * 60 * 1000)
 

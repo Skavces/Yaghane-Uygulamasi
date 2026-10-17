@@ -1,6 +1,7 @@
 import { useState, useEffect, useRef } from "react"
 import axios from "axios"
-import { RotateCcw, Upload } from "lucide-react"
+import { FolderOpen, RotateCcw, Upload } from "lucide-react"
+import KlasorSecici from "./KlasorSecici"
 
 const ONAY_YAZISI = "GERİ YÜKLE"
 
@@ -16,6 +17,7 @@ export default function YedekBolumu() {
   const [mesgul, setMesgul] = useState(false)
   const [onay, setOnay] = useState(null)
   const [onayYazi, setOnayYazi] = useState("")
+  const [seciciAcik, setSeciciAcik] = useState(false)
   const dosyaRef = useRef(null)
 
   const yukle = async () => {
@@ -46,7 +48,10 @@ export default function YedekBolumu() {
     }
   }
 
-  const klasorKaydet = () => calistir(() => axios.put("/api/yedek/klasor", { klasor }))
+  const klasorSec = async (yol) => {
+    setSeciciAcik(false)
+    await calistir(() => axios.put("/api/yedek/klasor", { klasor: yol }))
+  }
   const simdiYedekAl = () => calistir(() => axios.post("/api/yedek/simdi"))
 
   const geriYukle = async () => {
@@ -96,16 +101,21 @@ export default function YedekBolumu() {
       <div>
         <label className="label">Yedek klasörü</label>
         <div className="flex gap-2">
-          <input
-            value={klasor}
-            onChange={(e) => setKlasor(e.target.value)}
-            className="input readout text-sm"
-            placeholder="/media/usb/yedek"
-          />
-          <button type="button" onClick={klasorKaydet} disabled={mesgul} className="btn-secondary">
-            Kaydet
+          <input value={klasor} readOnly className="input readout text-sm" />
+          <button
+            type="button"
+            onClick={() => setSeciciAcik(true)}
+            disabled={mesgul || seciciAcik}
+            className="btn-secondary shrink-0"
+          >
+            <FolderOpen className="w-4 h-4" /> Klasör seç
           </button>
         </div>
+        {seciciAcik && (
+          <div className="mt-2">
+            <KlasorSecici onSec={klasorSec} onVazgec={() => setSeciciAcik(false)} />
+          </div>
+        )}
       </div>
 
       <div className="flex gap-2">
@@ -118,7 +128,7 @@ export default function YedekBolumu() {
           disabled={mesgul}
           className="btn-secondary flex-1"
         >
-          <Upload className="w-4 h-4" /> Dosyadan yükle
+          <Upload className="w-4 h-4" /> Yedek yükle
         </button>
         <input ref={dosyaRef} type="file" accept=".db" onChange={dosyaSecildi} className="hidden" />
       </div>
