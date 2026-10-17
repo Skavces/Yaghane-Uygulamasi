@@ -45,7 +45,7 @@ function App() {
       <header className="bg-[#1F3318] sticky top-0 z-50">
         <div className="max-w-7xl mx-auto px-6 h-14 flex justify-between items-center">
           <div className="flex items-center gap-3">
-            <img src="/zeytin-logo.svg" alt="logo" className="w-9 h-9 bg-white rounded p-0.5" />
+            <img src="/zeytin-logo.svg" alt="logo" className="w-9 h-9 [filter:drop-shadow(1px_0_0_#fff)_drop-shadow(-1px_0_0_#fff)_drop-shadow(0_1px_0_#fff)_drop-shadow(0_-1px_0_#fff)]" />
             <div className="flex items-baseline gap-3">
               <h1 className="font-display text-base font-bold tracking-wide text-white">
                 KAYA KARDEŞLER
