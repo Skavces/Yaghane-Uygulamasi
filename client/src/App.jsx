@@ -25,7 +25,11 @@ function App() {
     socket.on("settings-updated", (newSettings) => {
        setSettings(newSettings)
     })
-    return () => socket.off("settings-updated")
+    socket.on("db-geri-yuklendi", () => window.location.reload())
+    return () => {
+      socket.off("settings-updated")
+      socket.off("db-geri-yuklendi")
+    }
   }, [])
 
   const handleLogout = () => setRole(null)

@@ -4,6 +4,8 @@ const { Server } = require("socket.io")
 const sqlite3 = require("sqlite3").verbose()
 const cors = require("cors")
 const path = require("path")
+const fs = require("fs")
+const os = require("os")
 
 const app = express()
 const server = http.createServer(app)
@@ -11,14 +13,28 @@ const server = http.createServer(app)
 app.use(cors({ origin: true, credentials: true }))
 app.use(express.json())
 
-const db = new sqlite3.Database(path.join(__dirname, "takip.db"), (err) => {
-  if (err) console.error(err.message)
-  else console.log("SQLite veritabanına bağlanıldı.")
-})
+const DB_YOLU = process.env.DB_YOLU || path.join(__dirname, "takip.db")
+const PORT = Number(process.env.PORT) || 3001
 
-db.serialize(() => {
-  db.run("PRAGMA journal_mode = WAL;")
-  db.run("PRAGMA busy_timeout = 5000;")
+function dbAc() {
+  const yeni = new sqlite3.Database(DB_YOLU, (err) => {
+    if (err) console.error(err.message)
+    else console.log("SQLite veritabanına bağlanıldı.")
+  })
+  yeni.serialize(() => {
+    yeni.run("PRAGMA journal_mode = WAL;")
+    yeni.run("PRAGMA busy_timeout = 5000;")
+  })
+  return yeni
+}
+
+// Geri yüklemede bağlantı yeniden açılır; handler'lar db'yi çağrı anında okur.
+let db = dbAc()
+
+let geriYukleniyor = false
+app.use("/api", (req, res, next) => {
+  if (geriYukleniyor) return res.status(503).json({ msg: "Yedek geri yükleniyor, birkaç saniye sonra tekrar deneyin." })
+  next()
 })
 
 function getTurkeyTimestamp() {
@@ -58,7 +74,7 @@ function formatBidonList(arr) {
   return a.join("-")
 }
 
-db.serialize(() => {
+const semaHazirla = () => db.serialize(() => {
   db.run(
     `CREATE TABLE IF NOT EXISTS islemler (
       id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -86,6 +102,12 @@ db.serialize(() => {
       if (err) console.error("Tablo oluşturma hatası:", err.message)
     }
   )
+
+  db.run(`ALTER TABLE settings ADD COLUMN yedek_klasoru TEXT DEFAULT ''`, (err) => {
+    if (err && !String(err.message || "").toLowerCase().includes("duplicate")) {
+      console.error("settings.yedek_klasoru kolon ekleme hatası:", err.message)
+    }
+  })
 
   db.run(`ALTER TABLE islemler ADD COLUMN iade_bidonlar TEXT DEFAULT ''`, (err) => {
     if (err) {
@@ -213,6 +235,8 @@ db.serialize(() => {
     }
   )
 })
+
+semaHazirla()
 
 const io = new Server(server, { cors: { origin: true, credentials: true } })
 
@@ -594,6 +618,211 @@ app.put("/api/not/:id", (req, res) => {
   })
 })
 
+// ---- Yedekleme ----
+const VARSAYILAN_YEDEK_KLASORU = path.join(__dirname, "yedekler")
+const YEDEK_SAKLAMA_GUN = 30
+const YEDEK_AD_DESENI = /^takip-[\w-]+\.db$/
+
+const dbGet = (sql, params = []) =>
+  new Promise((resolve, reject) => db.get(sql, params, (err, row) => (err ? reject(err) : resolve(row))))
+const dbRun = (sql, params = []) =>
+  new Promise((resolve, reject) =>
+    db.run(sql, params, function (err) {
+      if (err) reject(err)
+      else resolve(this)
+    })
+  )
+
+async function yedekKlasoruOku() {
+  const row = await dbGet("SELECT yedek_klasoru FROM settings LIMIT 1")
+  return (row && row.yedek_klasoru) || VARSAYILAN_YEDEK_KLASORU
+}
+
+function yedekAdiTarih(zaman) {
+  const [tarih, saat] = getTurkeyTimestamp().split(" ")
+  return zaman ? `${tarih}_${saat.replace(/:/g, "")}` : tarih
+}
+
+// etiket boşsa günlük otomatik yedek adı (takip-YYYY-MM-DD.db), doluysa saatli ad.
+async function yedekAl(etiket = "") {
+  const klasor = await yedekKlasoruOku()
+  await fs.promises.mkdir(klasor, { recursive: true })
+  const ad = etiket ? `takip-${yedekAdiTarih(true)}-${etiket}.db` : `takip-${yedekAdiTarih(false)}.db`
+  const hedef = path.join(klasor, ad)
+  // VACUUM INTO, WAL dahil tutarlı tek dosya üretir (düz kopyalama WAL yüzünden eksik kalabilir).
+  await dbRun(`VACUUM INTO '${hedef.replace(/'/g, "''")}'`)
+  await eskiYedekleriTemizle(klasor)
+  return ad
+}
+
+async function eskiYedekleriTemizle(klasor) {
+  const [yil, ay, gun] = getTurkeyTimestamp().slice(0, 10).split("-").map(Number)
+  const sinir = Date.UTC(yil, ay - 1, gun) - YEDEK_SAKLAMA_GUN * 24 * 60 * 60 * 1000
+  for (const ad of await fs.promises.readdir(klasor)) {
+    const m = /^takip-(\d{4})-(\d{2})-(\d{2})/.exec(ad)
+    if (!m || !YEDEK_AD_DESENI.test(ad)) continue
+    if (Date.UTC(Number(m[1]), Number(m[2]) - 1, Number(m[3])) < sinir) {
+      await fs.promises.unlink(path.join(klasor, ad)).catch(() => {})
+    }
+  }
+}
+
+// Bilgisayar geceleri kapalı olabildiği için sabit saat yerine "bugünün yedeği yoksa al".
+async function gunlukYedekKontrol() {
+  if (geriYukleniyor) return
+  try {
+    const klasor = await yedekKlasoruOku()
+    const bugun = path.join(klasor, `takip-${yedekAdiTarih(false)}.db`)
+    if (!fs.existsSync(bugun)) {
+      const ad = await yedekAl()
+      console.log("Günlük yedek alındı:", ad)
+    }
+  } catch (err) {
+    console.error("Günlük yedek hatası:", err.message)
+  }
+}
+
+async function adayDogrula(dosya) {
+  const aday = await new Promise((resolve, reject) => {
+    const d = new sqlite3.Database(dosya, sqlite3.OPEN_READWRITE, (err) => (err ? reject(err) : resolve(d)))
+  })
+  const al = (sql) => new Promise((resolve, reject) => aday.all(sql, (err, rows) => (err ? reject(err) : resolve(rows))))
+  try {
+    const kontrol = await al("PRAGMA integrity_check")
+    if (!kontrol.length || kontrol[0].integrity_check !== "ok") throw new Error("Dosya bozuk")
+    const tablolar = (await al("SELECT name FROM sqlite_master WHERE type='table'")).map((r) => r.name)
+    if (!tablolar.includes("islemler") || !tablolar.includes("settings")) {
+      throw new Error("Bu dosya bu uygulamanın veritabanı yedeği değil")
+    }
+  } finally {
+    await new Promise((resolve) => aday.close(() => resolve()))
+  }
+}
+
+async function geriYukle(kaynakDosya) {
+  const gecici = path.join(os.tmpdir(), `yaghane-geri-yukle-${Date.now()}.db`)
+  await fs.promises.copyFile(kaynakDosya, gecici)
+  try {
+    try {
+      await adayDogrula(gecici)
+    } catch (err) {
+      const e = new Error(err.message && /yedek değil|bozuk/.test(err.message) ? err.message : "Geçerli bir SQLite dosyası değil")
+      e.durum = 400
+      throw e
+    }
+
+    geriYukleniyor = true
+    try {
+      const klasor = await yedekKlasoruOku()
+      // Mevcut verinin yedeği alınamazsa geri yükleme yapılmaz.
+      await yedekAl("geri-yukleme-oncesi")
+
+      await new Promise((resolve, reject) => db.close((err) => (err ? reject(err) : resolve())))
+      try {
+        await fs.promises.copyFile(gecici, DB_YOLU)
+        for (const ek of ["-wal", "-shm"]) await fs.promises.unlink(DB_YOLU + ek).catch(() => {})
+      } finally {
+        db = dbAc()
+        semaHazirla()
+      }
+      // Yüklenen yedekteki eski klasör yolu geçerli olmayabilir; mevcut yolu koru.
+      await dbRun("UPDATE settings SET yedek_klasoru=?", [klasor])
+    } finally {
+      geriYukleniyor = false
+    }
+    io.emit("db-geri-yuklendi")
+  } finally {
+    await fs.promises.unlink(gecici).catch(() => {})
+  }
+}
+
+const hataYanit = (res, err) => res.status(err.durum || 500).json({ msg: err.message || "Beklenmeyen hata" })
+
+app.get("/api/yedek", async (req, res) => {
+  try {
+    const klasor = await yedekKlasoruOku()
+    let yedekler = []
+    if (fs.existsSync(klasor)) {
+      const adlar = (await fs.promises.readdir(klasor)).filter((a) => YEDEK_AD_DESENI.test(a))
+      yedekler = await Promise.all(
+        adlar.map(async (ad) => {
+          const st = await fs.promises.stat(path.join(klasor, ad))
+          return { ad, boyut: st.size, tarih: st.mtimeMs }
+        })
+      )
+      yedekler.sort((a, b) => b.tarih - a.tarih)
+    }
+    res.json({ klasor, yedekler })
+  } catch (err) {
+    hataYanit(res, err)
+  }
+})
+
+app.put("/api/yedek/klasor", async (req, res) => {
+  try {
+    const klasor = String(req.body.klasor || "").trim()
+    if (!path.isAbsolute(klasor)) {
+      return res.status(400).json({ msg: "Tam klasör yolu girin (örn. /media/usb/yedek veya D:\\Yedek)." })
+    }
+    try {
+      await fs.promises.mkdir(klasor, { recursive: true })
+      const test = path.join(klasor, ".yazma-testi")
+      await fs.promises.writeFile(test, "ok")
+      await fs.promises.unlink(test)
+    } catch {
+      return res.status(400).json({ msg: "Bu klasör oluşturulamadı veya içine yazılamıyor." })
+    }
+    const sonuc = await dbRun("UPDATE settings SET yedek_klasoru=?", [klasor])
+    if (!sonuc.changes) await dbRun("INSERT INTO settings (yedek_klasoru) VALUES (?)", [klasor])
+    res.json({ msg: "Yedek klasörü kaydedildi", klasor })
+  } catch (err) {
+    hataYanit(res, err)
+  }
+})
+
+app.post("/api/yedek/simdi", async (req, res) => {
+  try {
+    const ad = await yedekAl("elle")
+    res.json({ msg: "Yedek alındı", ad })
+  } catch (err) {
+    hataYanit(res, err)
+  }
+})
+
+app.post("/api/yedek/geri-yukle/:ad", async (req, res) => {
+  try {
+    const ad = path.basename(String(req.params.ad || ""))
+    if (!YEDEK_AD_DESENI.test(ad)) return res.status(400).json({ msg: "Geçersiz yedek adı" })
+    const dosya = path.join(await yedekKlasoruOku(), ad)
+    if (!fs.existsSync(dosya)) return res.status(404).json({ msg: "Yedek dosyası bulunamadı" })
+    await geriYukle(dosya)
+    res.json({ msg: "Yedek geri yüklendi" })
+  } catch (err) {
+    hataYanit(res, err)
+  }
+})
+
+app.post(
+  "/api/yedek/yukle",
+  express.raw({ type: "application/octet-stream", limit: "500mb" }),
+  async (req, res) => {
+    const gecici = path.join(os.tmpdir(), `yaghane-yukleme-${Date.now()}.db`)
+    try {
+      if (!Buffer.isBuffer(req.body) || !req.body.length) return res.status(400).json({ msg: "Dosya boş" })
+      await fs.promises.writeFile(gecici, req.body)
+      await geriYukle(gecici)
+      res.json({ msg: "Yedek geri yüklendi" })
+    } catch (err) {
+      hataYanit(res, err)
+    } finally {
+      await fs.promises.unlink(gecici).catch(() => {})
+    }
+  }
+)
+
+setTimeout(gunlukYedekKontrol, 2000)
+setInterval(gunlukYedekKontrol, 60 * 60 * 1000)
+
 const clientBuildPath = path.join(__dirname, "../client/dist")
 app.use(express.static(clientBuildPath))
 
@@ -601,7 +830,7 @@ app.get(/^(?!\/api\/).*/, (req, res) => {
   res.sendFile(path.join(clientBuildPath, "index.html"))
 })
 
-server.listen(3001, "0.0.0.0", () => {
-  console.log("Server: http://0.0.0.0:3001")
+server.listen(PORT, "0.0.0.0", () => {
+  console.log(`Server: http://0.0.0.0:${PORT}`)
   console.log("Türkiye Saati (UTC+3) aktif")
 })

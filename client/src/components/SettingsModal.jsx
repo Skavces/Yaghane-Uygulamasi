@@ -1,5 +1,6 @@
 import { useState, useEffect } from "react"
 import axios from "axios"
+import YedekBolumu from "./YedekBolumu"
 
 export default function SettingsModal({ onClose, onSave }) {
   const [formData, setFormData] = useState({
@@ -46,7 +47,7 @@ export default function SettingsModal({ onClose, onSave }) {
 
   return (
     <div className="fixed inset-0 z-[60] bg-murekkep/60 flex items-center justify-center p-4">
-      <div className="bg-white rounded-md shadow-lg w-full max-w-sm max-h-[90vh] overflow-y-auto border border-cizgi">
+      <div className="bg-white rounded-md shadow-lg w-full max-w-md max-h-[90vh] overflow-y-auto border border-cizgi">
         <div className="px-6 py-4 border-b border-cizgi flex justify-between items-center">
           <h2 className="font-display text-lg font-bold text-murekkep">Ayarlar</h2>
           <button
@@ -114,6 +115,10 @@ export default function SettingsModal({ onClose, onSave }) {
             {loading ? "Kaydediliyor..." : "Kaydet"}
           </button>
         </form>
+
+        <div className="px-6 pb-6">
+          <YedekBolumu />
+        </div>
       </div>
     </div>
   )
