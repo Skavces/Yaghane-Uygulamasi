@@ -4,7 +4,7 @@ import { hesaplaYagIslemi, hesaplaYagciPaneli } from "../utils/yagHesap"
 import io from "socket.io-client"
 import * as XLSX from "xlsx-js-style"
 import { saveAs } from "file-saver"
-import { Check, Download, X } from "lucide-react"
+import { Check, Download, Search, X } from "lucide-react"
 import TarihSaat from "./TarihSaat"
 import Telefon from "./Telefon"
 
@@ -1148,7 +1148,7 @@ export default function CikisciPanel({ defaultSettings }) {
                 placeholder="123"
                 className="input readout pr-10"
               />
-              {bekleyenMusteriAra && (
+              {bekleyenMusteriAra ? (
                 <button
                   onClick={() => setBekleyenMusteriAra("")}
                   className="absolute right-3 top-1/2 -translate-y-1/2 text-murekkep/40 hover:text-murekkep"
@@ -1157,6 +1157,8 @@ export default function CikisciPanel({ defaultSettings }) {
                 >
                   <X className="w-4 h-4" />
                 </button>
+              ) : (
+                <Search className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-murekkep/40 pointer-events-none" />
               )}
             </div>
           </div>
