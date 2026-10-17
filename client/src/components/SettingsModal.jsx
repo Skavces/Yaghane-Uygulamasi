@@ -68,6 +68,11 @@ export default function SettingsModal({ onClose, onSave }) {
           )}
 
           <div>
+            <h3 className="font-display text-base font-bold text-murekkep">Perakende satış için varsayılan fiyat</h3>
+            <p className="text-sm text-murekkep/60">Çıkış ekranında perakende satış formunda birim fiyat olarak gelir.</p>
+          </div>
+
+          <div>
             <label className="label">Yağ fiyatı (₺)</label>
             <input
               type="number"
