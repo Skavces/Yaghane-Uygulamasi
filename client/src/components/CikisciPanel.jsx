@@ -1146,7 +1146,7 @@ export default function CikisciPanel({ defaultSettings }) {
                 }}
                 inputMode="numeric"
                 placeholder="123"
-                className="input readout pr-10"
+                className="peer input readout pr-10"
               />
               {bekleyenMusteriAra ? (
                 <button
@@ -1158,7 +1158,7 @@ export default function CikisciPanel({ defaultSettings }) {
                   <X className="w-4 h-4" />
                 </button>
               ) : (
-                <Search className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-murekkep/40 pointer-events-none" />
+                <Search className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-murekkep/40 peer-focus:text-zeytin transition-colors pointer-events-none" />
               )}
             </div>
           </div>
@@ -1176,9 +1176,9 @@ export default function CikisciPanel({ defaultSettings }) {
                 }}
                 inputMode="numeric"
                 placeholder="05551234567"
-                className="input readout pr-10"
+                className="peer input readout pr-10"
               />
-              {gecmisTelefonAra && (
+              {gecmisTelefonAra ? (
                 <button
                   onClick={() => setGecmisTelefonAra("")}
                   className="absolute right-3 top-1/2 -translate-y-1/2 text-murekkep/40 hover:text-murekkep"
@@ -1187,6 +1187,8 @@ export default function CikisciPanel({ defaultSettings }) {
                 >
                   <X className="w-4 h-4" />
                 </button>
+              ) : (
+                <Search className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-murekkep/40 peer-focus:text-zeytin transition-colors pointer-events-none" />
               )}
             </div>
           </div>
