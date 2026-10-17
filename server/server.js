@@ -739,50 +739,21 @@ async function geriYukle(kaynakDosya) {
 
 const hataYanit = (res, err) => res.status(err.durum || 500).json({ msg: err.message || "Beklenmeyen hata" })
 
-const YEDEK_DETAY = /^takip-(\d{4}-\d{2}-\d{2})(?:_(\d{6}))?(?:-(.+))?\.db$/
-const TARIH_DESENI = /^\d{4}-\d{2}-\d{2}$/
-const YEDEK_TURLERI = { elle: "elle", "geri-yukleme-oncesi": "oncesi" }
-
-// Tarih ve tür dosya adından okunur (yedek başka diske kopyalanınca değiştirilme zamanı bozulur, ad bozulmaz).
-async function yedekAdiCozumle(klasor, ad) {
-  const m = YEDEK_DETAY.exec(ad)
-  if (m) return { ad, gun: m[1], saat: m[2] || "", tur: YEDEK_TURLERI[m[3]] || "otomatik" }
-  const st = await fs.promises.stat(path.join(klasor, ad))
-  const gun = new Date(st.mtimeMs).toLocaleDateString("sv-SE", { timeZone: "Europe/Istanbul" })
-  return { ad, gun, saat: "", tur: "otomatik" }
-}
-
 app.get("/api/yedek", async (req, res) => {
   try {
-    const baslangic = String(req.query.baslangic || "")
-    const bitis = String(req.query.bitis || "")
-    const tur = String(req.query.tur || "")
-    if ((baslangic && !TARIH_DESENI.test(baslangic)) || (bitis && !TARIH_DESENI.test(bitis))) {
-      return res.status(400).json({ msg: "Tarih geçersiz." })
-    }
-    if (tur && !["otomatik", "elle", "oncesi"].includes(tur)) return res.status(400).json({ msg: "Yedek türü geçersiz." })
-    const limit = Math.min(Math.max(parseInt(req.query.limit, 10) || 20, 1), 100)
-    const offset = Math.max(parseInt(req.query.offset, 10) || 0, 0)
-
     const klasor = await yedekKlasoruOku()
-    let uygun = []
+    let yedekler = []
     if (fs.existsSync(klasor)) {
       const adlar = (await fs.promises.readdir(klasor)).filter((a) => YEDEK_AD_DESENI.test(a))
-      const cozulmus = await Promise.all(adlar.map((ad) => yedekAdiCozumle(klasor, ad)))
-      uygun = cozulmus.filter(
-        (y) => (!baslangic || y.gun >= baslangic) && (!bitis || y.gun <= bitis) && (!tur || y.tur === tur)
+      yedekler = await Promise.all(
+        adlar.map(async (ad) => {
+          const st = await fs.promises.stat(path.join(klasor, ad))
+          return { ad, boyut: st.size, tarih: st.mtimeMs }
+        })
       )
-      uygun.sort((a, b) => (b.gun + (b.saat || "000000")).localeCompare(a.gun + (a.saat || "000000")))
+      yedekler.sort((a, b) => b.tarih - a.tarih)
     }
-
-    // Boyut için yalnızca dönen sayfa stat edilir; klasör büyüse de hızlı kalır.
-    const yedekler = await Promise.all(
-      uygun.slice(offset, offset + limit).map(async (y) => {
-        const st = await fs.promises.stat(path.join(klasor, y.ad))
-        return { ...y, boyut: st.size }
-      })
-    )
-    res.json({ klasor, toplam: uygun.length, yedekler })
+    res.json({ klasor, yedekler })
   } catch (err) {
     hataYanit(res, err)
   }
