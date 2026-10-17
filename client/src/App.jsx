@@ -42,23 +42,23 @@ function App() {
 
   return (
     <div className="min-h-screen bg-zemin">
-      <header className="bg-[#1F3318] sticky top-0 z-50">
+      <header className="bg-white shadow-[0_1px_0_0_#D9DCD4,0_4px_12px_-2px_rgba(28,36,32,0.10)] sticky top-0 z-50">
         <div className="max-w-7xl mx-auto px-6 h-14 flex justify-between items-center">
           <div className="flex items-center gap-3">
-            <img src="/zeytin-logo.svg" alt="logo" className="w-9 h-9 [filter:drop-shadow(1px_0_0_#fff)_drop-shadow(-1px_0_0_#fff)_drop-shadow(0_1px_0_#fff)_drop-shadow(0_-1px_0_#fff)]" />
+            <img src="/zeytin-logo.svg" alt="logo" className="w-9 h-9" />
             <div className="flex items-baseline gap-3">
-              <h1 className="font-display text-base font-bold tracking-wide text-white">
+              <h1 className="font-display text-base font-bold tracking-wide text-murekkep">
                 KAYA KARDEŞLER
               </h1>
-              <span className="hidden sm:inline text-sm text-white/70">Zeytinyağı Fabrikası</span>
+              <span className="hidden sm:inline text-sm text-murekkep/60">Zeytinyağı Fabrikası</span>
             </div>
           </div>
 
           <div className="flex items-center gap-4">
-            <span className="text-sm font-semibold text-white/90">{istasyon}</span>
+            <span className="text-sm font-semibold text-murekkep/70">{istasyon}</span>
             <button
               onClick={handleLogout}
-              className="btn border border-white/40 text-white hover:bg-white/15 py-1.5"
+              className="btn-secondary py-1.5"
             >
               Çıkış yap
             </button>
