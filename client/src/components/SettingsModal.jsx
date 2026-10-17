@@ -47,7 +47,7 @@ export default function SettingsModal({ onClose, onSave }) {
 
   return (
     <div className="fixed inset-0 z-[60] bg-murekkep/60 flex items-center justify-center p-4">
-      <div className="bg-white rounded-md shadow-lg w-full max-w-md max-h-[90vh] overflow-y-auto border border-cizgi">
+      <div className="bg-white rounded-md shadow-lg w-full max-w-4xl max-h-[90vh] overflow-y-auto border border-cizgi">
         <div className="px-6 py-4 border-b border-cizgi flex justify-between items-center">
           <h2 className="font-display text-lg font-bold text-murekkep">Ayarlar</h2>
           <button
@@ -59,6 +59,7 @@ export default function SettingsModal({ onClose, onSave }) {
           </button>
         </div>
 
+        <div className="grid md:grid-cols-2">
         <form onSubmit={handleSave} className="p-6 space-y-4">
           {error && (
              <div className="p-3 bg-red-50 text-red-700 text-sm font-semibold rounded border border-red-200">
@@ -116,8 +117,9 @@ export default function SettingsModal({ onClose, onSave }) {
           </button>
         </form>
 
-        <div className="px-6 pb-6">
+        <div className="p-6 border-t md:border-t-0 md:border-l border-cizgi">
           <YedekBolumu />
+        </div>
         </div>
       </div>
     </div>
